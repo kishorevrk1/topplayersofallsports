@@ -7,7 +7,7 @@ import Button from '../../../components/ui/Button';
 const PlayerCard = ({ player, isCompact = false }) => {
   if (isCompact) {
     return (
-      <Link to="/player-profile" className="block">
+      <Link to={`/player-profile/${player.id}`} className="block">
         <div className="flex items-center space-x-3 p-3 bg-card rounded-lg border border-border hover:shadow-md transition-all duration-200">
           <div className="relative flex-shrink-0">
             <Image
@@ -44,7 +44,7 @@ const PlayerCard = ({ player, isCompact = false }) => {
   }
 
   return (
-    <Link to="/player-profile" className="block">
+    <Link to={`/player-profile/${player.id}`} className="block">
       <div className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-all duration-300 group">
         <div className="relative">
           <Image

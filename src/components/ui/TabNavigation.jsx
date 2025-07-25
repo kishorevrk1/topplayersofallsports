@@ -14,7 +14,7 @@ const TabNavigation = () => {
     },
     { 
       label: 'Players', 
-      path: '/player-profile', 
+      path: '/players', 
       icon: 'Users',
       badge: null
     },

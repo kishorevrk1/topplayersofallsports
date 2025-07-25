@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import Header from '../../components/ui/Header';
 import TabNavigation from '../../components/ui/TabNavigation';
 import PlayerHero from './components/PlayerHero';
@@ -12,14 +12,18 @@ import Breadcrumb from './components/Breadcrumb';
 import SocialShare from './components/SocialShare';
 
 const PlayerProfile = () => {
+  const { id } = useParams();
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState('overview');
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Get player ID from URL params or search params (for backward compatibility)
+  const playerId = id || searchParams.get('id') || '1';
+
   // Mock player data
   const mockPlayer = {
-    id: searchParams.get('id') || '1',
+    id: playerId,
     name: "LeBron James",
     fullName: "LeBron Raymone James Sr.",
     sport: "Basketball",

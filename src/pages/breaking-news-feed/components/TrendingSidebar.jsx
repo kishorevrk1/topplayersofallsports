@@ -167,7 +167,7 @@ const TrendingSidebar = () => {
             <Icon name="Users" size={20} className="mr-2 text-accent" />
             Trending Players
           </h3>
-          <Link to="/player-profile">
+          <Link to="/players">
             <Button variant="ghost" size="sm">
               View All
               <Icon name="ArrowRight" size={14} className="ml-1" />
@@ -179,7 +179,7 @@ const TrendingSidebar = () => {
           {trendingPlayers.map((player) => (
             <Link
               key={player.id}
-              to={`/player-profile?id=${player.id}`}
+              to={`/player-profile/${player.id}`}
               className="flex items-center space-x-3 p-2 rounded-lg hover:bg-muted transition-colors group"
             >
               <div className="relative">
