@@ -148,7 +148,7 @@ const TrendingSidebar = () => {
             <Icon name="Users" size={20} className="text-accent" />
             <span>Popular Players</span>
           </h2>
-          <Link to="/player-profile">
+          <Link to="/players">
             <Button variant="ghost" size="sm">
               View All
               <Icon name="ArrowRight" size={14} className="ml-1" />
@@ -158,7 +158,7 @@ const TrendingSidebar = () => {
 
         <div className="space-y-3">
           {popularPlayers.map((player, index) => (
-            <Link key={player.id} to="/player-profile" className="block">
+            <Link key={player.id} to={`/player-profile/${player.id}`} className="block">
               <div className="flex items-center space-x-3 p-2 hover:bg-muted rounded-lg transition-colors duration-150">
                 <div className="flex-shrink-0 w-8 h-8 bg-accent/10 rounded-full flex items-center justify-center">
                   <span className="text-sm font-bold text-accent">#{index + 1}</span>

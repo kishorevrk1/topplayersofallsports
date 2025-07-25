@@ -16,7 +16,7 @@ const PlayerCard = ({ player }) => {
       'PF': 'bg-indigo-100 text-indigo-800',
       'C': 'bg-gray-100 text-gray-800',
       'P': 'bg-teal-100 text-teal-800',
-      'C': 'bg-pink-100 text-pink-800',
+      'CB': 'bg-pink-100 text-pink-800',
       'SS': 'bg-cyan-100 text-cyan-800',
       'default': 'bg-muted text-text-secondary'
     };
@@ -53,7 +53,7 @@ const PlayerCard = ({ player }) => {
           </div>
           
           <div className="flex-1 min-w-0">
-            <Link to="/player-profile" className="block">
+            <Link to={`/player-profile/${player.id}`} className="block">
               <h3 className="text-lg font-semibold text-text-primary hover:text-accent transition-colors duration-150 truncate">
                 {player.name}
               </h3>
@@ -114,7 +114,7 @@ const PlayerCard = ({ player }) => {
 
         {/* Actions */}
         <div className="flex items-center justify-between">
-          <Link to="/player-profile">
+          <Link to={`/player-profile/${player.id}`}>
             <Button variant="outline" size="sm">
               View Profile
               <Icon name="ArrowRight" size={14} className="ml-1" />

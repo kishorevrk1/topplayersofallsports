@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Header from '../../components/ui/Header';
 import TabNavigation from '../../components/ui/TabNavigation';
 import HeroSection from './components/HeroSection';
 import SportCategoryFilter from './components/SportCategoryFilter';
+import TopPlayersTable from './components/TopPlayersTable';
+import QuickStatsDashboard from './components/QuickStatsDashboard';
 import ContentFeed from './components/ContentFeed';
 import TrendingSidebar from './components/TrendingSidebar';
 import Icon from '../../components/AppIcon';
@@ -90,6 +93,31 @@ const HomeDashboard = () => {
                 activeCategory={selectedCategory}
               />
               
+              {/* Top Players Section Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-text-primary">Top Players</h2>
+                  <p className="text-text-secondary mt-1">Featured athletes from all sports</p>
+                </div>
+                <Link to="/players">
+                  <Button variant="outline" className="flex items-center space-x-2">
+                    <Icon name="Users" size={16} />
+                    <span>View All Players</span>
+                    <Icon name="ArrowRight" size={16} />
+                  </Button>
+                </Link>
+              </div>
+              
+              {/* Top Players Table */}
+              <TopPlayersTable 
+                selectedCategory={selectedCategory}
+              />
+              
+              {/* Quick Stats Dashboard */}
+              <QuickStatsDashboard 
+                selectedCategory={selectedCategory}
+              />
+              
               {/* Last Updated Info */}
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-2 text-sm text-text-secondary">
@@ -136,6 +164,31 @@ const HomeDashboard = () => {
             <SportCategoryFilter 
               onCategoryChange={setSelectedCategory}
               activeCategory={selectedCategory}
+            />
+            
+            {/* Top Players Section Header - Mobile */}
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-bold text-text-primary">Top Players</h2>
+                <p className="text-text-secondary text-sm">Featured athletes</p>
+              </div>
+              <Link to="/players">
+                <Button variant="outline" size="sm" className="flex items-center space-x-1">
+                  <Icon name="Users" size={14} />
+                  <span className="hidden sm:inline">View All</span>
+                  <Icon name="ArrowRight" size={14} />
+                </Button>
+              </Link>
+            </div>
+            
+            {/* Top Players Table - Mobile */}
+            <TopPlayersTable 
+              selectedCategory={selectedCategory}
+            />
+            
+            {/* Quick Stats Dashboard - Mobile */}
+            <QuickStatsDashboard 
+              selectedCategory={selectedCategory}
             />
             
             {/* Pull to Refresh Indicator */}

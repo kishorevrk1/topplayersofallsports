@@ -7,8 +7,10 @@ import HomeDashboard from "pages/home-dashboard";
 import UserAuthentication from "pages/user-authentication";
 import BreakingNewsFeed from "pages/breaking-news-feed";
 import PlayerProfile from "pages/player-profile";
+import PlayersDirectory from "pages/players-directory";
 import VideoHighlightsHub from "pages/video-highlights-hub";
 import SearchResults from "pages/search-results";
+import SportsCalendar from "pages/sports-calendar";
 import NotFound from "pages/NotFound";
 
 const Routes = () => {
@@ -22,9 +24,12 @@ const Routes = () => {
         <Route path="/home-dashboard" element={<HomeDashboard />} />
         <Route path="/user-authentication" element={<UserAuthentication />} />
         <Route path="/breaking-news-feed" element={<BreakingNewsFeed />} />
+        <Route path="/players" element={<PlayersDirectory />} />
+        <Route path="/player-profile/:id" element={<PlayerProfile />} />
         <Route path="/player-profile" element={<PlayerProfile />} />
         <Route path="/video-highlights-hub" element={<VideoHighlightsHub />} />
         <Route path="/search-results" element={<SearchResults />} />
+        <Route path="/sports-calendar" element={<SportsCalendar />} />
         <Route path="*" element={<NotFound />} />
       </RouterRoutes>
       </ErrorBoundary>
