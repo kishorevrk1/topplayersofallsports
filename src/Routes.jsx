@@ -5,12 +5,16 @@ import ErrorBoundary from "components/ErrorBoundary";
 // Add your imports here
 import HomeDashboard from "pages/home-dashboard";
 import UserAuthentication from "pages/user-authentication";
+import OAuthCallback from "pages/oauth-callback";
 import BreakingNewsFeed from "pages/breaking-news-feed";
 import PlayerProfile from "pages/player-profile";
 import PlayersDirectory from "pages/players-directory";
 import VideoHighlightsHub from "pages/video-highlights-hub";
 import SearchResults from "pages/search-results";
 import SportsCalendar from "pages/sports-calendar";
+import Profile from "pages/profile";
+import EditProfile from "pages/profile/edit";
+import Settings from "pages/settings";
 import NotFound from "pages/NotFound";
 
 const Routes = () => {
@@ -23,6 +27,7 @@ const Routes = () => {
         <Route path="/" element={<HomeDashboard />} />
         <Route path="/home-dashboard" element={<HomeDashboard />} />
         <Route path="/user-authentication" element={<UserAuthentication />} />
+        <Route path="/oauth/callback" element={<OAuthCallback />} />
         <Route path="/breaking-news-feed" element={<BreakingNewsFeed />} />
         <Route path="/players" element={<PlayersDirectory />} />
         <Route path="/player-profile/:id" element={<PlayerProfile />} />
@@ -30,6 +35,9 @@ const Routes = () => {
         <Route path="/video-highlights-hub" element={<VideoHighlightsHub />} />
         <Route path="/search-results" element={<SearchResults />} />
         <Route path="/sports-calendar" element={<SportsCalendar />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/profile/edit" element={<EditProfile />} />
+        <Route path="/settings" element={<Settings />} />
         <Route path="*" element={<NotFound />} />
       </RouterRoutes>
       </ErrorBoundary>

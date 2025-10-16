@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import Icon from '../AppIcon';
 import Button from './Button';
 import Input from './Input';
+import UserProfile from '../UserProfile';
 
 const Header = () => {
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
@@ -119,15 +120,7 @@ const Header = () => {
           </Button>
 
           {/* User Profile */}
-          <Link to="/user-authentication">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="hover:bg-muted"
-            >
-              <Icon name="User" size={20} />
-            </Button>
-          </Link>
+          <UserProfile />
 
           {/* Mobile Menu Toggle */}
           <Button

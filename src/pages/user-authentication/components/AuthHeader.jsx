@@ -1,44 +1,25 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import Icon from '../../../components/AppIcon';
-import Button from '../../../components/ui/Button';
+import AppIcon from '../../../components/AppIcon';
+import AppImage from '../../../components/AppImage';
 
-const AuthHeader = ({ showBackButton = true }) => {
+const AuthHeader = ({ showBackButton = false }) => {
   const navigate = useNavigate();
 
-  const handleBack = () => {
-    if (window.history.length > 1) {
-      navigate(-1);
-    } else {
-      navigate('/home-dashboard');
-    }
-  };
-
   return (
-    <header className="flex items-center justify-between p-4 lg:p-6">
-      {/* Logo */}
-      <Link to="/home-dashboard" className="flex items-center space-x-2">
-        <div className="flex items-center justify-center w-8 h-8 bg-primary rounded-lg">
-          <Icon name="Trophy" size={20} color="white" />
-        </div>
-        <span className="text-xl font-bold text-primary hidden sm:block">
-          TopPlayersofAllSports
-        </span>
-        <span className="text-xl font-bold text-primary sm:hidden">
-          TPAS
-        </span>
+    <header className="flex items-center justify-between">
+      <Link to="/" className="flex items-center gap-2">
+        <AppImage src="/logo.png" alt="Logo" className="h-8 w-auto" />
+        <span className="text-lg font-bold text-text-primary">TopPlayers</span>
       </Link>
-
-      {/* Back Button */}
       {showBackButton && (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleBack}
-          className="hover:bg-muted"
+        <button
+          onClick={() => navigate(-1)}
+          className="text-sm text-text-secondary hover:text-text-primary flex items-center gap-1"
         >
-          <Icon name="X" size={20} />
-        </Button>
+          <AppIcon name="ArrowLeft" size={16} />
+          Back
+        </button>
       )}
     </header>
   );
