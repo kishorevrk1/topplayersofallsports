@@ -1,0 +1,65 @@
+ # Backend High-Level Design (HLD)
+
+ ## Platform Overview
+ - **Architecture**: API Gateway + domain microservices (Calendar, Players, News, Highlights, Profile, Search).
+ - **Data**: Postgres (system of record), Redis (cache), optional Elasticsearch (search/auto-complete).
+ - **Observability**: OpenTelemetry, Prometheus, Grafana, structured logs.
+
+ ## Authentication
+ - **Decision**: Use a managed IdP — **AWS Cognito** — for authentication and authorization (OIDC/OAuth2).
+ - **Token model**: Short-lived Access Token (JWT ~15 min) + refresh token (rotation).
+ - **Gateway**: Validates JWT via Cognito JWKS; enforces HTTPS, CORS, and rate limits.
+ - **Frontend contracts (unchanged)** as currently used in `src/services/authService.js` and `src/contexts/AuthContext.jsx`:
+   - `POST /api/auth/login`
+   - `POST /api/auth/register`
+   - `POST /api/auth/refresh`
+   - `POST /api/auth/logout`
+   - `GET  /api/auth/me`
+   - Google OAuth via `/oauth2/authorization/google` (gateway routes to Cognito Hosted UI or federation config)
+ - **Auth Service (AuthSvc)**: Bridges `/api/auth/*` to Cognito (token exchange, user creation, password reset, email verification) and enriches `/auth/me` with app profile data from `ProfileSvc`.
+ - **Profile data**: Application-specific fields (favorites, preferences, avatar) live in `ProfileSvc` (Postgres), not in Cognito.
+
+## Core Services (summary)
+- **CalendarSvc**: Normalized schedules, live/upcoming games; backed by ingest pipeline and Redis cache.
+- **PlayersSvc**: Player/Team catalog and snapshots; integrates with Search for free-text.
+- **NewsSvc**: Ingest and serve curated news; supports trending and filters.
+- **HighlightsSvc**: YouTube/official sources metadata; entity tagging for deep links.
+- **ProfileSvc**: User profile and preferences (app-specific), keyed by Cognito subject.
+- **SearchSvc**: Cross-entity search/auto-complete (optional Elasticsearch/OpenSearch).
+
+## Highlights (YouTube) — MVP
+- **Source**: YouTube Data API v3 via official playlists (league/team). Avoid `search` in steady-state.
+- **Quota**: Use `playlistItems.list` + batched `videos.list`; poll 5–10 min for top sources.
+- **API**: `GET /api/highlights` (filters: sport/league/team/date), `GET /api/highlights/trending`.
+- **Storage**: `highlights` table + tags; Redis cache for hot lists.
+
+## Calendar — MVP scope
+- **Focus**: Ship “Live Now” and “Tonight” first; defer full month view.
+- **API**: `GET /api/sports-calendar/games/live`, `GET /api/sports-calendar/games?date=YYYY-MM-DD`.
+- **Why**: Higher ROI for startup; faster delivery; complements highlights/news.
+
+## Players Directory & Profile — HLD
+- **Service**: PlayersSvc (microservice)
+- **Data**: players, player_stats, teams tables
+- **API**:
+  - `GET /api/players?sport=&leagueId=&teamId=&q=&page=&size=&sort=metric:desc`
+  - `GET /api/players/{playerId}` (profile, stats, recent games)
+  - `GET /api/teams?sport=&leagueId=&q=`
+- **Ranking Logic**:
+  - Default sort: Player Score (sport-specific weighted formula, e.g. NBA: PPG/APG/RPG/EFF)
+  - Trending: Recent form boosts (last 5 games)
+  - Flexible: Allows sorting/filtering by any stat
+- **Example Response**: `{ id, name, sport, team, score, ppg, apg, rpg, rank, headshot_url, trending }
+  ...`
+- **Why**: Transparent, tunable, and engaging for users; backend exposes score and rank per player.
+
+## Non-Functional Requirements
+- **Performance**: P95 < 300ms for cached GETs; < 800ms for composite BFF responses.
+- **Scalability**: Stateless services, horizontal scaling; DB read replicas for heavy reads.
+- **Resilience**: Timeouts, retries with jitter, circuit breakers, bulkheads.
+- **Versioning**: `/api/v1/*` with backward-compatible contracts and deprecation policy.
+
+## Open Items
+- Cognito environment setup (dev/stage/prod) and domain configuration.
+- OAuth providers to enable at MVP (Google first; others later).
+- Finalize token lifetimes, refresh rotation, and cookie strategy for Phase 2.

@@ -8,6 +8,7 @@ import TopPlayersTable from './components/TopPlayersTable';
 import QuickStatsDashboard from './components/QuickStatsDashboard';
 import ContentFeed from './components/ContentFeed';
 import TrendingSidebar from './components/TrendingSidebar';
+import ProfileCompletionCard from './components/ProfileCompletionCard';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 
@@ -84,6 +85,9 @@ const HomeDashboard = () => {
           <div className="hidden lg:grid lg:grid-cols-12 lg:gap-8">
             {/* Main Content Area */}
             <div className="lg:col-span-9">
+              {/* Profile Completion Card */}
+              <ProfileCompletionCard />
+              
               {/* Hero Section */}
               <HeroSection />
               
@@ -157,6 +161,9 @@ const HomeDashboard = () => {
 
           {/* Mobile Layout */}
           <div className="lg:hidden">
+            {/* Profile Completion Card */}
+            <ProfileCompletionCard />
+            
             {/* Hero Section */}
             <HeroSection />
             

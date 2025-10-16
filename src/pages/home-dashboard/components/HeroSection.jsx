@@ -3,73 +3,140 @@ import { Link } from 'react-router-dom';
 import Image from '../../../components/AppImage';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import realSportsDataService from '../../../services/realSportsDataService';
 
 const HeroSection = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
+  const [heroStories, setHeroStories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const scrollContainerRef = useRef(null);
   const autoPlayRef = useRef(null);
 
   // Minimum swipe distance (in px)
   const minSwipeDistance = 50;
 
-  // Multiple breaking news stories with high-quality sports images
-  const heroStories = [
+  // Fallback hero stories for when API data is not available
+  const fallbackHeroStories = [
     {
       id: 1,
-      title: "LeBron James Breaks All-Time Scoring Record in Lakers Victory",
-      summary: `In a historic night at Crypto.com Arena, LeBron James surpassed Kareem Abdul-Jabbar's long-standing NBA scoring record with a fadeaway jumper in the third quarter. The Lakers defeated the Thunder 133-130 in overtime, with James finishing with 38 points, 7 rebounds, and 6 assists. The crowd erupted as the game was stopped to acknowledge the milestone achievement.`,
+      title: "Welcome to Top Players of All Sports",
+      summary: "Stay updated with the latest sports news, player statistics, and live scores from around the world. Real-time data from NBA, NFL, MLB, NHL, and more.",
       image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200&h=600&fit=crop&crop=center",
       mobileImage: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&h=500&fit=crop&crop=center",
-      category: "NBA",
-      timestamp: new Date(Date.now() - 1800000), // 30 minutes ago
-      author: "ESPN Sports",
-      readTime: "3 min read",
-      views: "2.4M",
-      isBreaking: true
+      category: "Sports",
+      timestamp: new Date(),
+      author: "Sports Team",
+      readTime: "2 min read",
+      views: "1.2M",
+      isBreaking: false,
+      url: "/breaking-news-feed"
     },
     {
       id: 2,
-      title: "Tom Brady Announces Comeback: Signs One-Year Deal with Miami Dolphins",
-      summary: `In a shocking turn of events, Tom Brady has announced his return to the NFL after a brief retirement, signing a one-year deal with the Miami Dolphins. The 46-year-old quarterback cited unfinished business and the opportunity to play in his home state as key factors in his decision. The Dolphins view Brady as the missing piece for a championship run.`,
+      title: "Live Sports Data Integration Active",
+      summary: "Real-time sports data is now being fetched from multiple free APIs including NBA Official, ESPN, MLB, NHL, and TheSportsDB for comprehensive coverage.",
       image: "https://images.unsplash.com/photo-1560272564-c83b66b1ad12?w=1200&h=600&fit=crop&crop=center",
       mobileImage: "https://images.unsplash.com/photo-1560272564-c83b66b1ad12?w=800&h=500&fit=crop&crop=center",
-      category: "NFL",
-      timestamp: new Date(Date.now() - 900000), // 15 minutes ago
-      author: "NFL Network",
-      readTime: "4 min read",
-      views: "1.8M",
-      isBreaking: true
+      category: "System",
+      timestamp: new Date(Date.now() - 1800000), // 30 minutes ago
+      author: "Development Team",
+      readTime: "3 min read",
+      views: "856K",
+      isBreaking: true,
+      url: "/breaking-news-feed"
     },
     {
       id: 3,
-      title: "Manchester United Completes Record-Breaking Mbappé Transfer",
-      summary: `Manchester United has completed the signing of Kylian Mbappé from Paris Saint-Germain in a deal worth €200 million, making it the most expensive transfer in football history. The French superstar has signed a five-year contract with the Red Devils and expressed his excitement about joining the Premier League.`,
+      title: "Multi-Sport Coverage Available",
+      summary: "Get comprehensive coverage across NBA, NFL, MLB, NHL, Soccer, Tennis, Golf, Boxing, and MMA. All your favorite sports in one place.",
       image: "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=1200&h=600&fit=crop&crop=center",
       mobileImage: "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=800&h=500&fit=crop&crop=center",
-      category: "Soccer",
-      timestamp: new Date(Date.now() - 2700000), // 45 minutes ago
-      author: "Sky Sports",
-      readTime: "5 min read",
-      views: "3.1M",
-      isBreaking: true
-    },
-    {
-      id: 4,
-      title: "Shohei Ohtani Sets New MLB Record with 60th Home Run of the Season",
-      summary: `Los Angeles Angels' Shohei Ohtani made history tonight by hitting his 60th home run of the season, becoming the first player since Babe Ruth to achieve this milestone while also pitching. The two-way superstar's incredible feat has reignited discussions about the greatest single-season performance in baseball history.`,
-      image: "https://images.unsplash.com/photo-1566577739112-5180d4bf9390?w=1200&h=600&fit=crop&crop=center",
-      mobileImage: "https://images.unsplash.com/photo-1566577739112-5180d4bf9390?w=800&h=500&fit=crop&crop=center",
-      category: "MLB",
+      category: "Features",
       timestamp: new Date(Date.now() - 3600000), // 1 hour ago
-      author: "MLB Network",
+      author: "Product Team",
       readTime: "4 min read",
-      views: "1.5M",
-      isBreaking: true
+      views: "672K",
+      isBreaking: false,
+      url: "/players"
     }
   ];
+
+  // Load real sports news on component mount
+  useEffect(() => {
+    const loadRealNewsData = async () => {
+      setLoading(true);
+      try {
+        console.log('[HeroSection] Loading real trending news...');
+        
+        const realNews = await realSportsDataService.getTrendingNews();
+        
+        // Transform real news to hero story format
+        const transformedStories = realNews.slice(0, 5).map((article, index) => ({
+          id: article.id || index + 1,
+          title: article.title || 'Breaking Sports News',
+          summary: article.description || 'Latest updates from the world of sports.',
+          image: article.images?.[0]?.url || fallbackHeroStories[index % fallbackHeroStories.length].image,
+          mobileImage: article.images?.[0]?.url || fallbackHeroStories[index % fallbackHeroStories.length].mobileImage,
+          category: article.category || 'Sports',
+          timestamp: new Date(article.publishedAt || Date.now()),
+          author: article.author || article.source || 'Sports Network',
+          readTime: '3 min read',
+          views: `${(Math.random() * 2 + 0.5).toFixed(1)}M`,
+          isBreaking: index < 2, // Mark first 2 as breaking
+          url: article.url
+        }));
+        
+        // Fallback stories if no real data
+        const fallbackStories = [
+          {
+            id: 1,
+            title: "Live Sports Data Now Available",
+            summary: "Real-time sports data is now being fetched from multiple free APIs including NBA, ESPN, MLB, and more. Get the latest scores, player stats, and breaking news.",
+            image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200&h=600&fit=crop&crop=center",
+            mobileImage: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&h=500&fit=crop&crop=center",
+            category: "System",
+            timestamp: new Date(),
+            author: "Top Players of All Sports",
+            readTime: "2 min read",
+            views: "1.2M",
+            isBreaking: true
+          }
+        ];
+        
+        const stories = transformedStories.length > 0 ? transformedStories : fallbackStories;
+        setHeroStories(stories);
+        
+        console.log(`[HeroSection] ✅ Loaded ${stories.length} hero stories`);
+        
+      } catch (error) {
+        console.error('[HeroSection] Failed to load real news:', error);
+        // Use minimal fallback
+        setHeroStories([
+          {
+            id: 1,
+            title: "Welcome to Top Players of All Sports",
+            summary: "Stay updated with the latest sports news, player statistics, and live scores from around the world.",
+            image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200&h=600&fit=crop&crop=center",
+            mobileImage: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&h=500&fit=crop&crop=center",
+            category: "Welcome",
+            timestamp: new Date(),
+            author: "Sports Team",
+            readTime: "1 min read",
+            views: "1.0M",
+            isBreaking: false
+          }
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadRealNewsData();
+  }, []);
 
   const formatTimeAgo = (timestamp) => {
     const now = new Date();
@@ -88,7 +155,7 @@ const HeroSection = () => {
 
   // Auto-play functionality
   useEffect(() => {
-    if (isAutoPlaying) {
+    if (isAutoPlaying && heroStories && heroStories.length > 1) {
       autoPlayRef.current = setInterval(() => {
         setCurrentSlide((prev) => (prev + 1) % heroStories.length);
       }, 5000); // Change slide every 5 seconds
@@ -99,11 +166,11 @@ const HeroSection = () => {
         clearInterval(autoPlayRef.current);
       }
     };
-  }, [isAutoPlaying, heroStories.length]);
+  }, [isAutoPlaying, heroStories?.length]);
 
   // Scroll to current slide
   useEffect(() => {
-    if (scrollContainerRef.current) {
+    if (scrollContainerRef.current && heroStories && heroStories.length > 0) {
       const scrollContainer = scrollContainerRef.current;
       const slideWidth = scrollContainer.offsetWidth;
       scrollContainer.scrollTo({
@@ -114,15 +181,21 @@ const HeroSection = () => {
   }, [currentSlide]);
 
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % heroStories.length);
+    if (heroStories && heroStories.length > 0) {
+      setCurrentSlide((prev) => (prev + 1) % heroStories.length);
+    }
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + heroStories.length) % heroStories.length);
+    if (heroStories && heroStories.length > 0) {
+      setCurrentSlide((prev) => (prev - 1 + heroStories.length) % heroStories.length);
+    }
   };
 
   const goToSlide = (index) => {
-    setCurrentSlide(index);
+    if (heroStories && heroStories.length > 0 && index >= 0 && index < heroStories.length) {
+      setCurrentSlide(index);
+    }
   };
 
   const handleMouseEnter = () => {
@@ -175,7 +248,37 @@ const HeroSection = () => {
     setTouchEnd(null);
   };
 
-  const currentStory = heroStories[currentSlide];
+  const currentStory = heroStories && heroStories.length > 0 ? heroStories[currentSlide] : null;
+
+  // Show loading state while data is being fetched
+  if (loading || !heroStories || heroStories.length === 0) {
+    return (
+      <div className="relative mb-6">
+        <div 
+          className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center"
+          style={{ 
+            height: 'clamp(280px, 50vh, 450px)',
+            minHeight: '280px',
+            maxHeight: '450px'
+          }}
+        >
+          <div className="text-center text-white z-20">
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+                <p className="text-xl font-semibold">Loading Latest Sports News...</p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-3xl font-bold mb-2">Welcome to Top Players of All Sports</h2>
+                <p className="text-lg opacity-90">Your ultimate destination for sports news and player stats</p>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div 

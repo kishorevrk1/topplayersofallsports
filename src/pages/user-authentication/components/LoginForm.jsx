@@ -54,8 +54,6 @@ const LoginForm = ({ onSubmit, isLoading, onForgotPassword, onSocialLogin }) => 
 
   const socialProviders = [
     { name: 'Google', icon: 'Chrome', color: 'bg-red-500 hover:bg-red-600' },
-    { name: 'Facebook', icon: 'Facebook', color: 'bg-blue-600 hover:bg-blue-700' },
-    { name: 'Apple', icon: 'Apple', color: 'bg-gray-900 hover:bg-black' }
   ];
 
   return (
@@ -136,7 +134,7 @@ const LoginForm = ({ onSubmit, isLoading, onForgotPassword, onSocialLogin }) => 
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3">
           {socialProviders.map((provider) => (
             <Button
               key={provider.name}
@@ -147,7 +145,7 @@ const LoginForm = ({ onSubmit, isLoading, onForgotPassword, onSocialLogin }) => 
               className="flex items-center justify-center space-x-2 h-12"
             >
               <Icon name={provider.icon} size={20} />
-              <span className="hidden sm:inline">{provider.name}</span>
+              <span>Continue with {provider.name}</span>
             </Button>
           ))}
         </div>
