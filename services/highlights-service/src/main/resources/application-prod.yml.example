@@ -1,0 +1,36 @@
+spring:
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+  
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+      ssl: true
+  
+  jpa:
+    show-sql: false
+
+# Temporal configuration for production (AWS/Cloud)
+temporal:
+  connection:
+    target: ${TEMPORAL_HOST:temporal.default.svc.cluster.local:7233}
+  namespace: ${TEMPORAL_NAMESPACE:production}
+  worker:
+    task-queue: highlights-ingest
+
+# YouTube API configuration (from AWS Secrets Manager)
+youtube:
+  api-key: ${YOUTUBE_API_KEY}
+
+logging:
+  level:
+    root: INFO
+    com.topplayersofallsports.highlights: INFO
