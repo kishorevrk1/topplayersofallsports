@@ -4,14 +4,19 @@ import Icon from '../../../components/AppIcon';
 
 const VideoGrid = ({ 
   videos, 
-  onVideoPlay, 
-  onVideoSave, 
+  onVideoPlay,
+  onPlay,  
+  onVideoSave,
+  onSave,  
   savedVideos = [], 
   isLoading = false,
   hasMore = true,
   onLoadMore,
   className = '' 
 }) => {
+  // Support both prop names for backward compatibility
+  const handlePlay = onVideoPlay || onPlay;
+  const handleSave = onVideoSave || onSave;
   const [visibleVideos, setVisibleVideos] = useState([]);
   const [loadingMore, setLoadingMore] = useState(false);
 
@@ -97,8 +102,8 @@ const VideoGrid = ({
           <VideoCard
             key={video.id}
             video={video}
-            onPlay={onVideoPlay}
-            onSave={onVideoSave}
+            onPlay={handlePlay}
+            onSave={handleSave}
             isSaved={isVideoSaved(video.id)}
           />
         ))}

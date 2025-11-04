@@ -11,13 +11,9 @@ const SportFilterTabs = ({ selectedSport, onSportChange, className = '' }) => {
     { value: 'all', label: 'All Sports', icon: 'Trophy' },
     { value: 'basketball', label: 'Basketball', icon: 'Circle' },
     { value: 'football', label: 'Football', icon: 'Zap' },
-    { value: 'soccer', label: 'Soccer', icon: 'Circle' },
-    { value: 'baseball', label: 'Baseball', icon: 'Circle' },
-    { value: 'hockey', label: 'Hockey', icon: 'Circle' },
-    { value: 'tennis', label: 'Tennis', icon: 'Circle' },
-    { value: 'golf', label: 'Golf', icon: 'Circle' },
-    { value: 'boxing', label: 'Boxing', icon: 'Square' },
+    { value: 'american_football', label: 'American Football', icon: 'Zap' },
     { value: 'mma', label: 'MMA', icon: 'Square' },
+    { value: 'tennis', label: 'Tennis', icon: 'Circle' },
   ];
 
   const checkScrollButtons = () => {

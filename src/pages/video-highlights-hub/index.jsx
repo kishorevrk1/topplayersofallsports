@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import Header from '../../components/ui/Header';
 import TabNavigation from '../../components/ui/TabNavigation';
@@ -7,468 +7,343 @@ import FeaturedHighlights from './components/FeaturedHighlights';
 import SportFilterTabs from './components/SportFilterTabs';
 import VideoFilters from './components/VideoFilters';
 import VideoGrid from './components/VideoGrid';
-import VideoPlayer from './components/VideoPlayer';
+import YouTubePlayer from './components/YouTubePlayer';
 import TrendingSidebar from './components/TrendingSidebar';
+import TimeFilter from './components/TimeFilter';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
+import {
+  useHighlights,
+  useFeaturedHighlights,
+  useTrendingHighlights,
+} from '../../hooks/useHighlights';
 
 const VideoHighlightsHub = () => {
   const [selectedSport, setSelectedSport] = useState('all');
+  const [selectedTime, setSelectedTime] = useState('all');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
   const [savedVideos, setSavedVideos] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasMore, setHasMore] = useState(true);
-  const [filters, setFilters] = useState({
-    duration: 'all',
-    uploadDate: 'today',
-    source: 'all',
-    sortBy: 'relevance',
-    quality: 'all',
+  const [sortBy, setSortBy] = useState('publishedAt');
+  
+  const observerTarget = useRef(null);
+
+  // Calculate date range based on selected time filter
+  const getDateRange = useCallback(() => {
+    const now = new Date();
+    switch (selectedTime) {
+      case 'today':
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        return today.toISOString();
+      case 'week':
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        return weekAgo.toISOString();
+      case 'month':
+        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        return monthAgo.toISOString();
+      default:
+        return null;
+    }
+  }, [selectedTime]);
+
+  // Fetch highlights with filters
+  const {
+    highlights,
+    isLoading,
+    error,
+    hasMore,
+    totalElements,
+    loadMore,
+    updateFilters,
+    refresh,
+  } = useHighlights({
+    sport: selectedSport === 'all' ? null : selectedSport,
+    sort: sortBy,
+    direction: 'desc',
+    startDate: getDateRange(),
   });
 
-  // Mock data for featured highlights
-  const featuredVideos = [
-    {
-      id: 'featured-1',
-      title: 'LeBron James Historic 40,000 Career Points Milestone Highlights',
-      thumbnail: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&h=450&fit=crop',
-      videoUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
-      duration: 420,
-      views: 2500000,
-      uploadedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      sport: 'Basketball',
-      isLive: false,
-      source: {
-        name: 'NBA',
-        logo: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=32&h=32&fit=crop'
-      }
-    },
-    {
-      id: 'featured-2',
-      title: 'Super Bowl LVIII Best Moments and Game-Winning Plays',
-      thumbnail: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=800&h=450&fit=crop',
-      videoUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_2mb.mp4',
-      duration: 600,
-      views: 5200000,
-      uploadedAt: new Date(Date.now() - 4 * 60 * 60 * 1000),
-      sport: 'Football',
-      isLive: false,
-      source: {
-        name: 'NFL',
-        logo: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=32&h=32&fit=crop'
-      }
-    },
-    {
-      id: 'featured-3',
-      title: 'Champions League Final 2024 - All Goals and Best Moments',
-      thumbnail: 'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=800&h=450&fit=crop',
-      videoUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
-      duration: 480,
-      views: 8900000,
-      uploadedAt: new Date(Date.now() - 6 * 60 * 60 * 1000),
-      sport: 'Soccer',
-      isLive: false,
-      source: {
-        name: 'UEFA',
-        logo: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=32&h=32&fit=crop'
-      }
-    }
-  ];
+  // Fetch featured highlights
+  const {
+    featured: featuredVideos,
+    isLoading: isFeaturedLoading,
+  } = useFeaturedHighlights({
+    sport: selectedSport === 'all' ? null : selectedSport,
+    limit: 3,
+  });
 
-  // Mock data for video highlights
-  const mockVideos = [
-    {
-      id: 'video-1',
-      title: 'Stephen Curry Breaks NBA 3-Point Record with Incredible Performance',
-      thumbnail: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&h=225&fit=crop',
-      videoUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
-      duration: 240,
-      views: 1200000,
-      uploadedAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
-      sport: 'Basketball',
-      isLive: false,
-      source: {
-        name: 'ESPN',
-        logo: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=32&h=32&fit=crop'
-      }
-    },
-    {
-      id: 'video-2',
-      title: 'Tom Brady Retirement Ceremony - Emotional Farewell Moments',
-      thumbnail: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=400&h=225&fit=crop',
-      videoUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_2mb.mp4',
-      duration: 360,
-      views: 3400000,
-      uploadedAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
-      sport: 'Football',
-      isLive: false,
-      source: {
-        name: 'NFL Network',
-        logo: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=32&h=32&fit=crop'
-      }
-    },
-    {
-      id: 'video-3',
-      title: 'Lionel Messi Magic - Best Skills and Goals Compilation',
-      thumbnail: 'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=400&h=225&fit=crop',
-      videoUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
-      duration: 300,
-      views: 2800000,
-      uploadedAt: new Date(Date.now() - 8 * 60 * 60 * 1000),
-      sport: 'Soccer',
-      isLive: false,
-      source: {
-        name: 'Fox Sports',
-        logo: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=32&h=32&fit=crop'
-      }
-    },
-    {
-      id: 'video-4',
-      title: 'NBA Slam Dunk Contest 2024 - All Dunks and Winner Highlights',
-      thumbnail: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&h=225&fit=crop',
-      videoUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
-      duration: 180,
-      views: 950000,
-      uploadedAt: new Date(Date.now() - 12 * 60 * 60 * 1000),
-      sport: 'Basketball',
-      isLive: false,
-      source: {
-        name: 'NBA',
-        logo: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=32&h=32&fit=crop'
-      }
-    },
-    {
-      id: 'video-5',
-      title: 'World Series Game 7 - Championship Winning Moments',
-      thumbnail: 'https://images.unsplash.com/photo-1566577739112-5180d4bf9390?w=400&h=225&fit=crop',
-      videoUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_2mb.mp4',
-      duration: 420,
-      views: 1800000,
-      uploadedAt: new Date(Date.now() - 16 * 60 * 60 * 1000),
-      sport: 'Baseball',
-      isLive: false,
-      source: {
-        name: 'MLB Network',
-        logo: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=32&h=32&fit=crop'
-      }
-    },
-    {
-      id: 'video-6',
-      title: 'Serena Williams Final Match - Tennis Legend Says Goodbye',
-      thumbnail: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=400&h=225&fit=crop',
-      videoUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
-      duration: 480,
-      views: 2200000,
-      uploadedAt: new Date(Date.now() - 20 * 60 * 60 * 1000),
-      sport: 'Tennis',
-      isLive: false,
-      source: {
-        name: 'Tennis Channel',
-        logo: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=32&h=32&fit=crop'
-      }
-    },
-    {
-      id: 'video-7',
-      title: 'Stanley Cup Finals Overtime Winner - Historic Goal',
-      thumbnail: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=225&fit=crop',
-      videoUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
-      duration: 150,
-      views: 1500000,
-      uploadedAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-      sport: 'Hockey',
-      isLive: false,
-      source: {
-        name: 'NHL Network',
-        logo: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=32&h=32&fit=crop'
-      }
-    },
-    {
-      id: 'video-8',
-      title: 'Tiger Woods Masters Victory - Comeback Story Highlights',
-      thumbnail: 'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?w=400&h=225&fit=crop',
-      videoUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_2mb.mp4',
-      duration: 600,
-      views: 3100000,
-      uploadedAt: new Date(Date.now() - 28 * 60 * 60 * 1000),
-      sport: 'Golf',
-      isLive: false,
-      source: {
-        name: 'Golf Channel',
-        logo: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=32&h=32&fit=crop'
-      }
-    }
-  ];
+  // Fetch trending highlights
+  const {
+    trending: trendingVideos,
+    isLoading: isTrendingLoading,
+  } = useTrendingHighlights({
+    sport: selectedSport === 'all' ? null : selectedSport,
+    limit: 10,
+  });
 
-  // Mock trending videos
-  const trendingVideos = [
-    {
-      ...mockVideos[0],
-      trendingScore: 245
-    },
-    {
-      ...mockVideos[1],
-      trendingScore: 189
-    },
-    {
-      ...mockVideos[2],
-      trendingScore: 156
-    },
-    {
-      ...mockVideos[3],
-      trendingScore: 134
-    },
-    {
-      ...mockVideos[4],
-      trendingScore: 98
-    }
-  ];
-
-  const [videos, setVideos] = useState([]);
-  const [filteredVideos, setFilteredVideos] = useState([]);
-
+  // Update filters when time, sport, or sort changes
   useEffect(() => {
-    // Simulate loading
-    const loadVideos = async () => {
-      setIsLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setVideos(mockVideos);
-      setIsLoading(false);
+    updateFilters({
+      sport: selectedSport === 'all' ? null : selectedSport,
+      sort: sortBy,
+      direction: 'desc',
+      startDate: getDateRange(),
+    });
+  }, [selectedTime, selectedSport, sortBy, updateFilters, getDateRange]);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoading) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
     };
+  }, [hasMore, isLoading, loadMore]);
 
-    loadVideos();
-  }, []);
-
-  useEffect(() => {
-    // Filter videos based on selected sport and filters
-    let filtered = videos;
-
-    if (selectedSport !== 'all') {
-      filtered = filtered.filter(video => 
-        video.sport.toLowerCase() === selectedSport.toLowerCase()
-      );
-    }
-
-    // Apply additional filters
-    if (filters.duration !== 'all') {
-      filtered = filtered.filter(video => {
-        switch (filters.duration) {
-          case 'short':
-            return video.duration < 240;
-          case 'medium':
-            return video.duration >= 240 && video.duration <= 1200;
-          case 'long':
-            return video.duration > 1200;
-          default:
-            return true;
-        }
-      });
-    }
-
-    if (filters.uploadDate !== 'all') {
-      const now = new Date();
-      filtered = filtered.filter(video => {
-        const videoDate = new Date(video.uploadedAt);
-        const diffInHours = (now - videoDate) / (1000 * 60 * 60);
-        
-        switch (filters.uploadDate) {
-          case 'today':
-            return diffInHours <= 24;
-          case 'week':
-            return diffInHours <= 168;
-          case 'month':
-            return diffInHours <= 720;
-          case 'year':
-            return diffInHours <= 8760;
-          default:
-            return true;
-        }
-      });
-    }
-
-    if (filters.source !== 'all') {
-      filtered = filtered.filter(video => 
-        video.source.name.toLowerCase().includes(filters.source.toLowerCase())
-      );
-    }
-
-    // Apply sorting
-    switch (filters.sortBy) {
-      case 'newest':
-        filtered.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
-        break;
-      case 'views':
-        filtered.sort((a, b) => b.views - a.views);
-        break;
-      case 'duration':
-        filtered.sort((a, b) => a.duration - b.duration);
-        break;
-      case 'trending':
-        // Sort by recent views and engagement
-        filtered.sort((a, b) => {
-          const aScore = b.views / ((Date.now() - new Date(a.uploadedAt)) / (1000 * 60 * 60));
-          const bScore = a.views / ((Date.now() - new Date(b.uploadedAt)) / (1000 * 60 * 60));
-          return bScore - aScore;
-        });
-        break;
-      default:
-        // Relevance - keep original order
-        break;
-    }
-
-    setFilteredVideos(filtered);
-  }, [videos, selectedSport, filters]);
-
-  const handleVideoPlay = (video) => {
+  const handlePlayVideo = (video) => {
     setSelectedVideo(video);
     setIsPlayerOpen(true);
   };
 
-  const handleVideoSave = (video) => {
+  const handleClosePlayer = () => {
+    setIsPlayerOpen(false);
+    setSelectedVideo(null);
+  };
+
+  const handleSaveVideo = (video) => {
     setSavedVideos(prev => {
-      const isAlreadySaved = prev.some(saved => saved.id === video.id);
-      if (isAlreadySaved) {
-        return prev.filter(saved => saved.id !== video.id);
-      } else {
-        return [...prev, video];
+      const isSaved = prev.some(v => v.id === video.id);
+      if (isSaved) {
+        return prev.filter(v => v.id !== video.id);
       }
+      return [...prev, video];
     });
   };
 
-  const handleLoadMore = async () => {
-    // Simulate loading more videos
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // In a real app, this would fetch more videos from an API
-    const moreVideos = mockVideos.map((video, index) => ({
-      ...video,
-      id: `${video.id}-more-${Date.now()}-${index}`,
-      title: `${video.title} - Extended Highlights`
-    }));
-    
-    setVideos(prev => [...prev, ...moreVideos]);
-    
-    // Simulate reaching the end after a few loads
-    if (videos.length > 50) {
-      setHasMore(false);
-    }
+  const isVideoSaved = (videoId) => {
+    return savedVideos.some(v => v.id === videoId);
   };
 
-  const getRelatedVideos = (currentVideo) => {
-    return videos
-      .filter(video => 
-        video.id !== currentVideo.id && 
-        video.sport === currentVideo.sport
-      )
-      .slice(0, 10);
+  const handleSportChange = (sport) => {
+    setSelectedSport(sport);
+  };
+
+  const handleSortChange = (newSortBy) => {
+    setSortBy(newSortBy);
+  };
+
+  const handleFilterChange = (newFilters) => {
+    // Map frontend filter format to backend format
+    const backendSort = {
+      'newest': 'publishedAt',
+      'mostViewed': 'viewCount',
+      'mostLiked': 'likeCount',
+      'trending': 'trending',
+      'relevance': 'publishedAt',
+    }[newFilters.sortBy] || 'publishedAt';
+
+    setSortBy(backendSort);
   };
 
   return (
     <>
       <Helmet>
-        <title>Video Highlights Hub - TopPlayersofAllSports</title>
-        <meta name="description" content="Watch the best sports highlights, game-winning moments, and player performances across all major sports. Stream HD videos from NBA, NFL, MLB, and more." />
-        <meta name="keywords" content="sports highlights, video highlights, NBA highlights, NFL highlights, soccer highlights, sports videos" />
+        <title>Video Highlights Hub - Top Players of All Sports</title>
+        <meta name="description" content="Watch the best sports highlights from basketball, football, soccer, MMA, tennis, and more. Catch up on the latest games and top plays." />
       </Helmet>
 
       <div className="min-h-screen bg-background">
         <Header />
-        
-        <main className="pt-16 pb-20 lg:pb-0">
-          {/* Content Filter Bar */}
-          <ContentFilterBar />
+        <TabNavigation />
+        <ContentFilterBar />
+
+        <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Page Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-text-primary mb-2">
+                Video Highlights Hub
+              </h1>
+              <p className="text-text-secondary">
+                Watch the best sports highlights from around the world
+                {totalElements > 0 && (
+                  <span className="ml-2 text-accent font-medium">
+                    ({totalElements.toLocaleString()} videos)
+                  </span>
+                )}
+              </p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="outline"
+                onClick={() => setIsFilterOpen(!isFilterOpen)}
+                className="flex items-center space-x-2"
+              >
+                <Icon name="SlidersHorizontal" size={16} />
+                <span>Filters</span>
+              </Button>
+              <Button
+                variant="outline"
+                onClick={refresh}
+                className="flex items-center space-x-2"
+              >
+                <Icon name="RefreshCw" size={16} />
+                <span>Refresh</span>
+              </Button>
+            </div>
+          </div>
+
+          {/* Featured Highlights */}
+          {!isFeaturedLoading && featuredVideos.length > 0 && (
+            <div className="mb-12">
+              <h2 className="text-2xl font-bold text-text-primary mb-6">
+                Featured Highlights
+              </h2>
+              <FeaturedHighlights
+                videos={featuredVideos}
+                onPlay={handlePlayVideo}
+              />
+            </div>
+          )}
 
           {/* Sport Filter Tabs */}
-          <SportFilterTabs 
-            selectedSport={selectedSport}
-            onSportChange={setSelectedSport}
-          />
-
-          <div className="flex">
-            {/* Desktop Filters Sidebar */}
-            <VideoFilters
-              filters={filters}
-              onFiltersChange={setFilters}
-              isOpen={isFilterOpen}
-              onToggle={() => setIsFilterOpen(!isFilterOpen)}
-            />
-
-            {/* Main Content Area */}
-            <div className="flex-1 min-w-0">
-              <div className="p-4 lg:p-6">
-                {/* Featured Highlights */}
-                <FeaturedHighlights 
-                  featuredVideos={featuredVideos}
-                  onPlay={handleVideoPlay}
-                />
-
-                {/* Mobile Filter Button */}
-                <div className="flex items-center justify-between mb-6 lg:hidden">
-                  <h2 className="text-xl font-bold text-text-primary">
-                    {selectedSport === 'all' ? 'All Highlights' : `${selectedSport} Highlights`}
-                  </h2>
-                  <VideoFilters
-                    filters={filters}
-                    onFiltersChange={setFilters}
-                    isOpen={isFilterOpen}
-                    onToggle={() => setIsFilterOpen(!isFilterOpen)}
-                  />
-                </div>
-
-                {/* Results Count */}
-                {!isLoading && (
-                  <div className="flex items-center justify-between mb-4">
-                    <p className="text-sm text-text-secondary">
-                      {filteredVideos.length} videos found
-                      {selectedSport !== 'all' && ` for ${selectedSport}`}
-                    </p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-text-secondary hover:text-text-primary lg:hidden"
-                    >
-                      <Icon name="Grid3X3" size={16} />
-                    </Button>
-                  </div>
-                )}
-
-                {/* Video Grid */}
-                <VideoGrid
-                  videos={filteredVideos}
-                  onVideoPlay={handleVideoPlay}
-                  onVideoSave={handleVideoSave}
-                  savedVideos={savedVideos}
-                  isLoading={isLoading}
-                  hasMore={hasMore}
-                  onLoadMore={handleLoadMore}
-                />
-              </div>
-            </div>
-
-            {/* Trending Sidebar */}
-            <TrendingSidebar
-              trendingVideos={trendingVideos}
-              onVideoSelect={handleVideoPlay}
+          <div className="mb-6">
+            <SportFilterTabs
+              selectedSport={selectedSport}
+              onSportChange={handleSportChange}
             />
           </div>
-        </main>
+
+          {/* Time Filter */}
+          <div className="mb-8 flex justify-between items-center">
+            <TimeFilter
+              selectedTime={selectedTime}
+              onTimeChange={setSelectedTime}
+            />
+            <div className="text-sm text-text-secondary">
+              {totalElements} videos
+            </div>
+          </div>
+
+          {/* Main Content Area */}
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Left Column - Filters (Collapsible) */}
+            {isFilterOpen && (
+              <div className="lg:w-64 flex-shrink-0">
+                <VideoFilters
+                  filters={{
+                    sortBy: sortBy === 'publishedAt' ? 'newest' : 
+                            sortBy === 'viewCount' ? 'mostViewed' :
+                            sortBy === 'likeCount' ? 'mostLiked' :
+                            sortBy === 'trending' ? 'trending' : 'newest',
+                  }}
+                  onFilterChange={handleFilterChange}
+                />
+              </div>
+            )}
+
+            {/* Center Column - Video Grid */}
+            <div className="flex-1 min-w-0">
+              {error && (
+                <div className="bg-error/10 border border-error text-error px-4 py-3 rounded-lg mb-6">
+                  <div className="flex items-center space-x-2">
+                    <Icon name="AlertCircle" size={20} />
+                    <span>Error loading videos: {error}</span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={refresh}
+                    className="mt-2"
+                  >
+                    Try Again
+                  </Button>
+                </div>
+              )}
+
+              <VideoGrid
+                videos={highlights}
+                onPlay={handlePlayVideo}
+                onSave={handleSaveVideo}
+                savedVideos={savedVideos}
+                isLoading={isLoading}
+              />
+
+              {/* Loading More Indicator */}
+              {isLoading && highlights.length > 0 && (
+                <div className="flex justify-center py-8">
+                  <div className="flex items-center space-x-2 text-text-secondary">
+                    <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
+                    <span>Loading more videos...</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Infinite Scroll Trigger */}
+              {hasMore && !isLoading && (
+                <div ref={observerTarget} className="h-20" />
+              )}
+
+              {/* No More Videos */}
+              {!hasMore && highlights.length > 0 && (
+                <div className="text-center py-8 text-text-secondary">
+                  <Icon name="CheckCircle" size={24} className="mx-auto mb-2" />
+                  <p>You've reached the end of the highlights</p>
+                </div>
+              )}
+
+              {/* No Results */}
+              {!isLoading && highlights.length === 0 && !error && (
+                <div className="text-center py-16">
+                  <Icon name="Video" size={48} className="mx-auto mb-4 text-text-secondary" />
+                  <h3 className="text-xl font-semibold text-text-primary mb-2">
+                    No highlights found
+                  </h3>
+                  <p className="text-text-secondary mb-4">
+                    Try adjusting your filters or check back later for new content
+                  </p>
+                  <Button onClick={() => setSelectedSport('all')}>
+                    View All Sports
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Right Column - Trending Sidebar */}
+            <div className="lg:w-80 flex-shrink-0">
+              <TrendingSidebar
+                videos={trendingVideos}
+                onPlay={handlePlayVideo}
+                isLoading={isTrendingLoading}
+              />
+            </div>
+          </div>
+        </div>
 
         {/* Video Player Modal */}
-        <VideoPlayer
-          video={selectedVideo}
-          isOpen={isPlayerOpen}
-          onClose={() => {
-            setIsPlayerOpen(false);
-            setSelectedVideo(null);
-          }}
-          relatedVideos={selectedVideo ? getRelatedVideos(selectedVideo) : []}
-          onVideoSelect={(video) => {
-            setSelectedVideo(video);
-          }}
-        />
-
-        <TabNavigation />
+        {isPlayerOpen && selectedVideo && (
+          <YouTubePlayer
+            video={selectedVideo}
+            onClose={handleClosePlayer}
+            relatedVideos={highlights.slice(0, 10)}
+            onVideoSelect={handlePlayVideo}
+          />
+        )}
       </div>
     </>
   );

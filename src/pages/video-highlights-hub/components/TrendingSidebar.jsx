@@ -4,10 +4,17 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
 const TrendingSidebar = ({ 
-  trendingVideos = [], 
-  onVideoSelect, 
+  trendingVideos,
+  videos,  
+  onVideoSelect,
+  onPlay,
+  isLoading = false,
   className = '' 
 }) => {
+  // Support both prop names for backward compatibility
+  const displayVideos = trendingVideos || videos || [];
+  const handleVideoClick = onVideoSelect || onPlay;
+
   const formatViews = (views) => {
     if (views >= 1000000) {
       return `${(views / 1000000).toFixed(1)}M`;
@@ -36,12 +43,8 @@ const TrendingSidebar = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  if (trendingVideos.length === 0) {
-    return null;
-  }
-
   return (
-    <div className={`hidden xl:block w-80 bg-card border-l border-border ${className}`}>
+    <div className={`hidden lg:block w-80 bg-card border-l border-border ${className}`}>
       <div className="p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -60,10 +63,21 @@ const TrendingSidebar = ({
 
         {/* Trending Videos List */}
         <div className="space-y-4">
-          {trendingVideos.map((video, index) => (
+          {isLoading ? (
+            <div className="text-center py-8 text-text-secondary">
+              <Icon name="Loader" size={24} className="animate-spin mx-auto mb-2" />
+              <p className="text-sm">Loading trending videos...</p>
+            </div>
+          ) : displayVideos.length === 0 ? (
+            <div className="text-center py-8 text-text-secondary">
+              <Icon name="TrendingUp" size={32} className="mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No trending videos yet</p>
+            </div>
+          ) : (
+            displayVideos.map((video, index) => (
             <div
               key={video.id}
-              onClick={() => onVideoSelect(video)}
+              onClick={() => handleVideoClick && handleVideoClick(video)}
               className="flex space-x-3 p-3 rounded-lg hover:bg-muted cursor-pointer transition-colors duration-150 group"
             >
               {/* Rank Number */}
@@ -140,7 +154,8 @@ const TrendingSidebar = ({
                 )}
               </div>
             </div>
-          ))}
+          ))
+          )}
         </div>
 
         {/* View All Trending */}

@@ -1,0 +1,81 @@
+spring:
+  application:
+    name: highlights-service
+  
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  
+  # CORS Configuration - Allow frontend to access API
+  web:
+    cors:
+      allowed-origins:
+        - "http://localhost:3000"
+        - "http://localhost:5173"
+      allowed-methods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      allowed-headers: "*"
+      allow-credentials: true
+      max-age: 3600
+  
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+  
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+  
+  cache:
+    type: redis
+    redis:
+      time-to-live: 300000 # 5 minutes default
+
+# Actuator endpoints for health checks and metrics
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# OpenAPI documentation
+springdoc:
+  api-docs:
+    path: /api/docs
+  swagger-ui:
+    path: /api/swagger-ui.html
+    operationsSorter: method
+
+# Application-specific configuration
+highlights:
+  youtube:
+    quota:
+      daily-limit: 10000
+      alert-threshold: 8000
+  ingest:
+    batch-size: 50
+    max-retries: 3
+    retry-backoff-ms: 1000
+  cache:
+    trending-ttl-seconds: 300
+    highlights-ttl-seconds: 600
