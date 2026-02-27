@@ -11,7 +11,7 @@ import PlayerProfile from "pages/player-profile";
 import PlayersDirectory from "pages/players-directory";
 import VideoHighlightsHub from "pages/video-highlights-hub";
 import SearchResults from "pages/search-results";
-import SportsCalendar from "pages/sports-calendar";
+import SportsCalendarPage from "pages/sports-calendar/SportsCalendarPage";
 import Profile from "pages/profile";
 import EditProfile from "pages/profile/edit";
 import Settings from "pages/settings";
@@ -34,7 +34,7 @@ const Routes = () => {
         <Route path="/player-profile" element={<PlayerProfile />} />
         <Route path="/video-highlights-hub" element={<VideoHighlightsHub />} />
         <Route path="/search-results" element={<SearchResults />} />
-        <Route path="/sports-calendar" element={<SportsCalendar />} />
+        <Route path="/sports-calendar" element={<SportsCalendarPage />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/profile/edit" element={<EditProfile />} />
         <Route path="/settings" element={<Settings />} />

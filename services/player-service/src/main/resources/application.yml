@@ -1,0 +1,148 @@
+server:
+  port: 8084
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: player-service
+  
+  datasource:
+    url: jdbc:postgresql://localhost:5433/topplayersofallsports
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        use_sql_comments: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+  
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 60000
+      jedis:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+  
+  cache:
+    type: redis
+    redis:
+      time-to-live: 604800000 # 7 days
+
+# OpenRouter AI Configuration
+openrouter:
+  api-key: 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
+  base-url: https://openrouter.ai/api/v1
+  model: tngtech/deepseek-r1t-chimera:free  # Free tier model
+  site-url: https://topplayersofallsports.com
+  site-name: TopPlayersOfAllSports
+  timeout-seconds: 60
+  max-tokens: 4000
+
+# API-Sports Configuration - REMOVED (AI-ONLY APPROACH)
+# apisports:
+#   api-key: REMOVED
+#   base-url: https://v3.football.api-sports.io
+#   timeout-seconds: 30
+
+# Player Sync Configuration
+player:
+  sync:
+    enabled: true
+    cron: "0 0 2 * * SUN"  # Every Sunday at 2 AM
+    players-per-sport: 50
+    sports:
+      - FOOTBALL
+      - BASKETBALL
+      - MMA
+      - CRICKET
+      - TENNIS
+    leagues:
+      football:
+        - 39   # Premier League
+        - 140  # La Liga
+        - 78   # Bundesliga
+        - 135  # Serie A
+        - 61   # Ligue 1
+      basketball:
+        - 12   # NBA
+      mma:
+        - 1    # UFC
+      cricket:
+        - 1    # IPL
+      tennis:
+        - 1    # ATP
+
+# AI Analysis Configuration
+ai:
+  analysis:
+    rating:
+      peak-performance-weight: 0.30
+      longevity-weight: 0.20
+      awards-weight: 0.20
+      era-adjusted-weight: 0.30
+    prompt:
+      temperature: 0.7
+      max-retries: 3
+
+# Logging
+logging:
+  level:
+    root: INFO
+    com.topplayersofallsports: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+# Swagger/OpenAPI
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+
+# Temporal Workflow Configuration
+temporal:
+  enabled: true             # Enable Temporal workflows
+  connection:
+    target: localhost:7233  # Temporal server address
+  namespace: default        # Temporal namespace
+  worker:
+    task-queue: player-registration
+    max-concurrent-activities: 10
+    max-concurrent-workflows: 5
+
+# Top 50 Ranking System Configuration
+ranking:
+  auto-initialize: false  # Automatically initialize all sports on startup (set to false for manual control)
+  auto-initialize-delay-seconds: 30  # Delay before starting auto-initialization

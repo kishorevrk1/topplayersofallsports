@@ -6,10 +6,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -88,6 +90,27 @@ public class AdminController {
                 "status", "error",
                 "message", "Failed to add channel IDs: " + e.getMessage()
             ));
+        }
+    }
+    
+    /**
+     * List all highlight sources with their channel ID status.
+     * Useful for debugging which sources need channel IDs.
+     */
+    @GetMapping("/list-sources")
+    @Operation(
+        summary = "List all highlight sources",
+        description = "Shows all sources with their channel ID status for debugging"
+    )
+    public ResponseEntity<List<Map<String, Object>>> listSources() {
+        log.info("Admin endpoint called: list-sources");
+        
+        try {
+            var sources = channelInfoBackfillService.listAllSources();
+            return ResponseEntity.ok(sources);
+        } catch (Exception e) {
+            log.error("Failed to list sources: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(List.of());
         }
     }
 }

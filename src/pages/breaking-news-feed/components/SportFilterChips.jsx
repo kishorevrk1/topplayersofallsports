@@ -1,24 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import { useNewsStats } from '../../../hooks/useNews';
 
 const SportFilterChips = ({ selectedSport, onSportChange }) => {
   const [showAll, setShowAll] = useState(false);
+  const { stats, loading } = useNewsStats();
 
+  // Map backend stats to frontend sports
+  const getSportCount = (sportId) => {
+    if (!stats) return 0;
+    
+    const sportMap = {
+      'all': stats.totalArticles,
+      'basketball': stats.basketballCount,
+      'football': stats.footballCount,
+      'soccer': stats.soccerCount,
+      'baseball': stats.baseballCount,
+      'hockey': stats.hockeyCount,
+      'tennis': stats.tennisCount,
+      'golf': stats.golfCount,
+      'mma': stats.mmaCount
+    };
+    
+    return sportMap[sportId] || 0;
+  };
+
+  // Only show sports that match highlights (same as video-highlights-hub)
   const sports = [
-    { id: 'all', name: 'All Sports', icon: 'Globe', count: 1247 },
-    { id: 'basketball', name: 'Basketball', icon: 'Circle', count: 342 },
-    { id: 'football', name: 'Football', icon: 'Zap', count: 289 },
-    { id: 'soccer', name: 'Soccer', icon: 'Circle', count: 234 },
-    { id: 'baseball', name: 'Baseball', icon: 'Circle', count: 156 },
-    { id: 'hockey', name: 'Hockey', icon: 'Circle', count: 98 },
-    { id: 'tennis', name: 'Tennis', icon: 'Circle', count: 87 },
-    { id: 'golf', name: 'Golf', icon: 'Circle', count: 65 },
-    { id: 'boxing', name: 'Boxing', icon: 'Square', count: 43 },
-    { id: 'mma', name: 'MMA', icon: 'Square', count: 38 },
-    { id: 'racing', name: 'Racing', icon: 'Zap', count: 29 },
-    { id: 'olympics', name: 'Olympics', icon: 'Award', count: 21 }
-  ];
+    { id: 'all', name: 'All Sports', icon: 'Globe', count: getSportCount('all') },
+    { id: 'basketball', name: 'Basketball', icon: 'Circle', count: getSportCount('basketball') },
+    { id: 'football', name: 'Football', icon: 'Zap', count: getSportCount('football') },
+    { id: 'soccer', name: 'Soccer', icon: 'Circle', count: getSportCount('soccer') },
+    { id: 'baseball', name: 'Baseball', icon: 'Circle', count: getSportCount('baseball') },
+    { id: 'hockey', name: 'Hockey', icon: 'Circle', count: getSportCount('hockey') }
+  ].filter(sport => sport.count > 0 || sport.id === 'all'); // Only show sports with articles
 
   const visibleSports = showAll ? sports : sports.slice(0, 6);
 
