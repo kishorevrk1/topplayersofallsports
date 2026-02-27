@@ -146,6 +146,21 @@ const YouTubePlayer = ({ video, onClose, relatedVideos = [], onVideoSelect }) =>
     return views?.toString() || '0';
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Unknown';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+    return `${Math.floor(diffDays / 365)} years ago`;
+  };
+
   const formatDuration = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -179,29 +194,31 @@ const YouTubePlayer = ({ video, onClose, relatedVideos = [], onVideoSelect }) =>
             </div>
           </div>
 
-          {/* Video Info - Compact */}
-          <div className="bg-black p-3 sm:p-4 text-white border-t border-gray-800">
-            <h2 className="text-lg sm:text-xl font-bold mb-2 line-clamp-1">{video.title}</h2>
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-300">
-              <div className="flex items-center space-x-2">
-                {video.source?.logo && (
+          {/* Video Info */}
+          <div className="flex-1 min-w-0 px-3 sm:px-4 py-2">
+            <h2 className="text-base sm:text-lg font-semibold text-text-primary mb-2 line-clamp-2">
+              {video.title}
+            </h2>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-text-secondary mb-3">
+              {video.source?.logo && (
+                <div className="flex items-center space-x-2">
                   <Image
                     src={video.source.logo}
                     alt={video.source.name}
-                    className="w-5 h-5 rounded-full"
+                    className="w-5 h-5 sm:w-6 sm:h-6 rounded-full"
                   />
-                )}
-                <span className="font-medium">{video.source?.name || 'Unknown'}</span>
+                  <span className="font-medium">{video.source.name}</span>
+                </div>
+              )}
+              <span className="hidden sm:inline">•</span>
+              <div className="flex items-center space-x-1">
+                <Icon name="Calendar" size={12} />
+                <span>{formatDate(video.publishedAt)}</span>
               </div>
               <span className="hidden sm:inline">•</span>
               <div className="flex items-center space-x-1">
                 <Icon name="Eye" size={12} />
                 <span>{formatViews(video.views)}</span>
-              </div>
-              <span className="hidden sm:inline">•</span>
-              <div className="flex items-center space-x-1">
-                <Icon name="ThumbsUp" size={12} />
-                <span>{formatViews(video.likes)}</span>
               </div>
               {video.sport && (
                 <span className="bg-accent bg-opacity-20 px-2 py-0.5 rounded text-xs font-medium">
@@ -209,6 +226,19 @@ const YouTubePlayer = ({ video, onClose, relatedVideos = [], onVideoSelect }) =>
                 </span>
               )}
             </div>
+            
+            {/* YouTube Compliance: Watch on YouTube Button */}
+            <a
+              href={`https://www.youtube.com/watch?v=${video.videoId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors duration-200"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+              </svg>
+              <span>Watch on YouTube</span>
+            </a>
           </div>
         </div>
 

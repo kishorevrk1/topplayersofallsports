@@ -829,8 +829,8 @@ const TopPlayersTable = ({ selectedCategory = 'all' }) => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {currentPlayers.map((player) => (
-                  <tr key={player.id} className="hover:bg-gray-50 transition-colors">
+                {currentPlayers.map((player, index) => (
+                  <tr key={`${selectedCategory}-${player.id}-${index}`} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-4">
                       <div className="flex items-center space-x-3">
                         <div className="relative">
@@ -939,8 +939,8 @@ const TopPlayersTable = ({ selectedCategory = 'all' }) => {
       ) : (
         /* Enhanced Cards View */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {currentPlayers.map((player) => (
-            <div key={player.id} className="bg-white rounded-lg border border-border p-6 hover:shadow-lg transition-shadow">
+          {currentPlayers.map((player, index) => (
+            <div key={`${selectedCategory}-card-${player.id}-${index}`} className="bg-white rounded-lg border border-border p-6 hover:shadow-lg transition-shadow">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-3">
                   <div className="relative">

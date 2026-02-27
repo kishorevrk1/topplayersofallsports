@@ -1,5 +1,6 @@
 package com.topplayersofallsports.highlights.service;
 
+import com.topplayersofallsports.highlights.config.ChannelMappingConfig;
 import com.google.api.services.youtube.model.Channel;
 import com.topplayersofallsports.highlights.domain.model.HighlightSource;
 import com.topplayersofallsports.highlights.infrastructure.youtube.YouTubeClient;
@@ -26,6 +27,7 @@ public class ChannelInfoBackfillService {
     private final HighlightSourceRepository sourceRepository;
     private final HighlightRepository highlightRepository;
     private final YouTubeClient youTubeClient;
+    private final ChannelMappingConfig channelMappingConfig;
 
     /**
      * Backfill channel information for all highlights.
@@ -149,30 +151,22 @@ public class ChannelInfoBackfillService {
 
     /**
      * Add YouTube channel IDs to all sources.
-     * This is a one-time setup operation.
+     * Loads mappings from channel-mappings.yml configuration file.
+     * This makes it easy to add new channels without code changes.
      */
     @Transactional
     public int addChannelIdsToSources() {
-        log.info("Adding YouTube channel IDs to all sources");
+        log.info("Adding YouTube channel IDs to all sources from configuration");
         
         int updated = 0;
+        int skipped = 0;
         
-        // Map of source names to their YouTube channel IDs
-        var channelIds = Map.ofEntries(
-            Map.entry("NBA", "UCWJ2lWNubArHWmf3FIHbfcQ"),
-            Map.entry("UFC", "UCvgfXK4nTYKudb0rFR6noLA"),
-            Map.entry("NFL", "UCDVYQ4Zhbm3S2dlz7P1GBDg"),
-            Map.entry("ESPN NFL", "UCiWLfSweyRNmLpgEHekhoAg"),
-            Map.entry("ESPN NBA", "UCiWLfSweyRNmLpgEHekhoAg"),
-            Map.entry("House of Highlights", "UCqQo7ewe87aYAe7ub5UqXMw"),
-            Map.entry("Premier League", "UC_8vRXCrUZYe2UqVnY3xRbg"),
-            Map.entry("LaLiga", "UC6jEJ8xgbOaZw-oi9-b6A2A"),
-            Map.entry("ATP Tour", "UCbcxFkd6B9xUU54InHv4Tig"),
-            Map.entry("Bellator MMA", "UCqO-XI2U_1ADxfp-jzrEfpg"),
-            Map.entry("ONE Championship", "UCiormkBf3jm6mfb7k0yPbKA")
-        );
+        // Get channel mappings from configuration file
+        Map<String, String> channelIds = channelMappingConfig.getAllMappings();
+        log.info("Loaded {} channel mappings from configuration", channelIds.size());
         
         List<HighlightSource> sources = sourceRepository.findByActive(true);
+        log.info("Found {} active sources to process", sources.size());
         
         for (HighlightSource source : sources) {
             String channelId = channelIds.get(source.getName());
@@ -180,13 +174,36 @@ public class ChannelInfoBackfillService {
                 source.setChannelId(channelId);
                 sourceRepository.save(source);
                 updated++;
-                log.info("Added channel ID for: {}", source.getName());
+                log.info("✓ Added channel ID for: {} -> {}", source.getName(), channelId);
             } else {
-                log.warn("No channel ID mapping for source: {}", source.getName());
+                skipped++;
+                log.warn("✗ No channel ID mapping for source: {} (add to channel-mappings.yml)", 
+                    source.getName());
             }
         }
         
-        log.info("Channel IDs added. Updated {} sources", updated);
+        log.info("Channel IDs added. Updated: {}, Skipped: {}, Total: {}", 
+            updated, skipped, sources.size());
         return updated;
+    }
+    
+    /**
+     * List all sources with their channel ID status.
+     * Useful for debugging which sources need channel IDs.
+     */
+    public List<Map<String, Object>> listAllSources() {
+        List<HighlightSource> sources = sourceRepository.findByActive(true);
+        Map<String, String> channelIds = channelMappingConfig.getAllMappings();
+        
+        return sources.stream()
+            .map(source -> Map.of(
+                "id", (Object) source.getId(),
+                "name", (Object) source.getName(),
+                "sport", (Object) (source.getSport() != null ? source.getSport().toString() : "N/A"),
+                "channelId", (Object) (source.getChannelId() != null ? source.getChannelId() : "NULL"),
+                "hasMapping", (Object) channelIds.containsKey(source.getName()),
+                "mappedChannelId", (Object) (channelIds.get(source.getName()) != null ? channelIds.get(source.getName()) : "N/A")
+            ))
+            .collect(java.util.stream.Collectors.toList());
     }
 }
