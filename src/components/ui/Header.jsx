@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Icon from '../AppIcon';
 import Button from './Button';
 import Input from './Input';
@@ -10,6 +10,7 @@ const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const location = useLocation();
+  const navigate = useNavigate();
 
   const navigationItems = [
     { label: 'Home', path: '/home-dashboard', icon: 'Home' },
@@ -21,8 +22,10 @@ const Header = () => {
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      window.location.href = `/search-results?q=${encodeURIComponent(searchQuery)}`;
+    const trimmed = searchQuery.trim();
+    if (trimmed) {
+      setIsSearchExpanded(false);
+      navigate(`/search-results?q=${encodeURIComponent(trimmed)}`);
     }
   };
 
