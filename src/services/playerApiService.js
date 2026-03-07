@@ -173,6 +173,15 @@ class PlayerApiService {
     }
 
     /**
+     * Get season-by-season and career stats for a player.
+     * For FOOTBALL players, data is sourced from API-Sports.
+     * Returns { playerId, seasonStats: { "2024": {...}, ... }, careerStats: {...} }
+     */
+    async getPlayerStats(playerId) {
+        return this.makeRequest(`/api/players/${playerId}/stats`);
+    }
+
+    /**
      * Check if backend is available
      */
     async checkHealth() {
