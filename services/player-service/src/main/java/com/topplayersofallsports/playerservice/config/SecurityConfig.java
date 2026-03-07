@@ -1,83 +1,97 @@
 package com.topplayersofallsports.playerservice.config;
 
-import org.springframework.beans.factory.annotation.Value;
+import com.topplayersofallsports.playerservice.filter.JwtAuthFilter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import static org.springframework.security.config.Customizer.withDefaults;
+import java.util.List;
 
 /**
- * Security Configuration
- * - Public access to /api/players/** endpoints
- * - Basic Auth protection for /api/admin/** endpoints
+ * JWT-based stateless security configuration.
+ *
+ * Public routes:
+ *   - /api/auth/**          — Google OAuth, refresh, logout, /me
+ *   - GET /api/players/**   — public player data
+ *   - GET /api/search/**    — public search
+ *   - /swagger-ui/**, /v3/api-docs/**, /actuator/health
+ *
+ * Protected routes:
+ *   - /api/admin/**         — ADMIN role required
+ *   - everything else       — any valid JWT
+ *
+ * CORS settings absorbed from the former CorsConfig (all four localhost origins preserved).
  */
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
-    @Value("${admin.username:admin}")
-    private String adminUsername;
-    
-    @Value("${admin.password:admin123}")
-    private String adminPassword;
+    private final JwtAuthFilter jwtAuthFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            // Disable CSRF for REST API
             .csrf(AbstractHttpConfigurer::disable)
-            
-            // Configure authorization rules
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Public endpoints
-                .requestMatchers("/api/players/**").permitAll()
-                .requestMatchers("/actuator/**").permitAll()
-                .requestMatchers("/swagger-ui/**").permitAll()
-                .requestMatchers("/api-docs/**").permitAll()
-                .requestMatchers("/v3/api-docs/**").permitAll()
-                
-                // Protected admin endpoints
+                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/players/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/search/**").permitAll()
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/actuator/health").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                
-                // All other requests require authentication
                 .anyRequest().authenticated()
             )
-            
-            // Use HTTP Basic for admin endpoints
-            .httpBasic(withDefaults())
-            
-            // Stateless session management
-            .sessionManagement(session -> 
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            );
-        
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 
     @Bean
-    public UserDetailsService userDetailsService(PasswordEncoder passwordEncoder) {
-        UserDetails admin = User.builder()
-            .username(adminUsername)
-            .password(passwordEncoder.encode(adminPassword))
-            .roles("ADMIN")
-            .build();
-        
-        return new InMemoryUserDetailsManager(admin);
-    }
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        // Matches all frontend dev origins (Vite default + alternative ports + loopback variants)
+        config.setAllowedOrigins(List.of(
+            "http://localhost:5173",
+            "http://localhost:3000",
+            "http://127.0.0.1:5173",
+            "http://127.0.0.1:3000"
+        ));
+
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+
+        config.setAllowedHeaders(List.of(
+            "Authorization",
+            "Content-Type",
+            "Accept",
+            "Origin",
+            "X-Requested-With"
+        ));
+
+        config.setAllowCredentials(true);
+
+        config.setExposedHeaders(List.of(
+            "X-Total-Count",
+            "X-Page-Number",
+            "X-Page-Size"
+        ));
+
+        config.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 }
