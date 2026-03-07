@@ -243,6 +243,16 @@ class PlayerApiService {
             isActive: player.isActive !== false
         };
     }
+
+    /**
+     * Compare two players side by side
+     * GET /api/players/compare?p1=id1&p2=id2
+     */
+    async comparePlayer(p1Id, p2Id) {
+        const res = await fetch(`${this.baseUrl}/api/players/compare?p1=${p1Id}&p2=${p2Id}`);
+        if (!res.ok) throw new Error('Comparison failed');
+        return res.json();
+    }
 }
 
 // Create singleton instance

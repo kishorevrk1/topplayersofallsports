@@ -236,7 +236,10 @@ const PlayerProfile = () => {
                     <button className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-muted hover:bg-muted/80 rounded-lg transition-colors duration-150 text-sm">
                       <span>Add to Favorites</span>
                     </button>
-                    <button className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-muted hover:bg-muted/80 rounded-lg transition-colors duration-150 text-sm">
+                    <button
+                      onClick={() => navigate(`/compare?p1=${playerId}`)}
+                      className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-muted hover:bg-muted/80 rounded-lg transition-colors duration-150 text-sm"
+                    >
                       <span>Compare Players</span>
                     </button>
                   </div>

@@ -15,6 +15,7 @@ import SportsCalendarPage from "pages/sports-calendar/SportsCalendarPage";
 import Profile from "pages/profile";
 import EditProfile from "pages/profile/edit";
 import Settings from "pages/settings";
+import PlayerComparisonPage from "pages/player-comparison";
 import NotFound from "pages/NotFound";
 
 const Routes = () => {
@@ -38,6 +39,7 @@ const Routes = () => {
         <Route path="/profile" element={<Profile />} />
         <Route path="/profile/edit" element={<EditProfile />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/compare" element={<PlayerComparisonPage />} />
         <Route path="*" element={<NotFound />} />
       </RouterRoutes>
       </ErrorBoundary>
