@@ -101,13 +101,13 @@ class PlayerApiService {
     }
 
     /**
-     * Search players by name
+     * Search players across name, team, nationality via the dedicated search endpoint.
+     * Returns SearchResultsResponse: { players, total, page, pageSize, query }
      */
-    async searchPlayers(query) {
-        if (!query || query.trim().length < 2) {
-            return [];
-        }
-        return this.makeRequest(`/api/players/search?name=${encodeURIComponent(query)}`);
+    async searchPlayers(q, sport = '', page = 0, size = 20) {
+        const params = new URLSearchParams({ q, page, size });
+        if (sport && sport !== 'all') params.set('sport', sport.toUpperCase());
+        return this.makeRequest(`/api/search?${params}`);
     }
 
     /**
@@ -125,6 +125,51 @@ class PlayerApiService {
      */
     async getTop50(sport = 'FOOTBALL') {
         return this.makeRequest(`/api/admin/players/rankings/top50/${sport.toUpperCase()}`);
+    }
+
+    /**
+     * Get Top 100 All-Time Greatest Players for a sport.
+     * Returns { sport, title, subtitle, count, players: [{id, rank, name, displayName, team,
+     *   position, nationality, age, photoUrl, isActive, rating, aiRating, biography,
+     *   strengths, careerHighlights}] }
+     */
+    async getTop100BySport(sport = 'FOOTBALL') {
+        return this.makeRequest(`/api/players/top100/${sport.toUpperCase()}`);
+    }
+
+    /**
+     * Get available Top 100 sports metadata (which sports have been seeded)
+     */
+    async getTop100Sports() {
+        return this.makeRequest('/api/players/top100');
+    }
+
+    /**
+     * Get ACR rating breakdown for a player (criteria scores, both model scores, confidence, evidence)
+     */
+    async getRatingBreakdown(playerId) {
+        return this.makeRequest(`/api/players/${playerId}/rating/breakdown`);
+    }
+
+    /**
+     * Get chronological rating history for a player (last 20 entries)
+     */
+    async getRatingHistory(playerId) {
+        return this.makeRequest(`/api/players/${playerId}/rating/history`);
+    }
+
+    /**
+     * Trigger a manual ACR re-evaluation for a player (admin)
+     */
+    async refreshRating(playerId) {
+        return this.makeRequest(`/api/players/${playerId}/rating/refresh`, { method: 'POST' });
+    }
+
+    /**
+     * Get confidence statistics for all rated players in a sport
+     */
+    async getConfidenceStats(sport = 'FOOTBALL') {
+        return this.makeRequest(`/api/players/sport/${sport.toUpperCase()}/confidence-stats`);
     }
 
     /**
