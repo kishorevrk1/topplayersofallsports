@@ -1,12 +1,15 @@
 package com.topplayersofallsports.playerservice.controller;
 
+import com.topplayersofallsports.playerservice.dto.ComparisonResponse;
 import com.topplayersofallsports.playerservice.dto.PlayerRegistrationRequest;
 import com.topplayersofallsports.playerservice.dto.PlayerRegistrationResponse;
 import com.topplayersofallsports.playerservice.entity.AIAnalysis;
 import com.topplayersofallsports.playerservice.entity.Player;
+import com.topplayersofallsports.playerservice.entity.RatingConsensus;
 import com.topplayersofallsports.playerservice.entity.Sport;
 import com.topplayersofallsports.playerservice.repository.AIAnalysisRepository;
 import com.topplayersofallsports.playerservice.repository.PlayerRepository;
+import com.topplayersofallsports.playerservice.repository.RatingConsensusRepository;
 import com.topplayersofallsports.playerservice.service.PlayerRegistrationService;
 import com.topplayersofallsports.playerservice.service.PlayerService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,6 +36,7 @@ public class PlayerController {
     private final PlayerRegistrationService playerRegistrationService;
     private final PlayerRepository playerRepository;
     private final AIAnalysisRepository aiAnalysisRepository;
+    private final RatingConsensusRepository ratingConsensusRepository;
     
     @GetMapping
     @Operation(summary = "Get all players by sport")
@@ -215,6 +219,56 @@ public class PlayerController {
         ));
     }
     
+    /**
+     * GET /api/players/compare?p1=1&p2=2
+     * Returns both players with their ACR rating snapshots for side-by-side comparison.
+     */
+    @GetMapping("/compare")
+    @Operation(summary = "Compare two players side by side",
+               description = "Returns both players with their ACR rating breakdowns for direct comparison")
+    public ResponseEntity<?> comparePlayers(
+            @RequestParam Long p1,
+            @RequestParam Long p2) {
+        log.info("REST request to compare players {} and {}", p1, p2);
+
+        Optional<Player> p1Opt = playerRepository.findById(p1);
+        Optional<Player> p2Opt = playerRepository.findById(p2);
+
+        if (p1Opt.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Player not found: " + p1));
+        }
+        if (p2Opt.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Player not found: " + p2));
+        }
+
+        return ResponseEntity.ok(ComparisonResponse.builder()
+            .player1(toSnapshot(p1Opt.get()))
+            .player2(toSnapshot(p2Opt.get()))
+            .build());
+    }
+
+    private ComparisonResponse.PlayerSnapshot toSnapshot(Player player) {
+        Optional<RatingConsensus> rc = ratingConsensusRepository.findByPlayer(player);
+        return ComparisonResponse.PlayerSnapshot.builder()
+            .id(player.getId())
+            .name(player.getName())
+            .displayName(player.getDisplayName() != null ? player.getDisplayName() : player.getName())
+            .sport(player.getSport().name())
+            .team(player.getTeam())
+            .position(player.getPosition())
+            .nationality(player.getNationality())
+            .age(player.getAge())
+            .photoUrl(player.getPhotoUrl())
+            .isActive(player.getIsActive())
+            .consensusScore(rc.map(RatingConsensus::getConsensusRating).orElse(null))
+            .confidenceLevel(rc.map(RatingConsensus::getConfidenceLevel).orElse(null))
+            .model1Score(rc.map(RatingConsensus::getModel1Rating).orElse(null))
+            .model2Score(rc.map(RatingConsensus::getModel2Rating).orElse(null))
+            .divergenceScore(rc.map(RatingConsensus::getDivergenceScore).orElse(null))
+            .criteriaBreakdown(rc.map(RatingConsensus::getCriteriaBreakdown).orElse(null))
+            .build();
+    }
+
     private String formatSportName(Sport sport) {
         return switch (sport) {
             case FOOTBALL -> "Football/Soccer";
