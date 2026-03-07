@@ -7,7 +7,7 @@ import Input from '../../components/ui/Input';
 import userProfileService from '../../services/userProfileService';
 
 const EditProfilePage = () => {
-  const { user, updateUser, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -100,9 +100,6 @@ const EditProfilePage = () => {
 
       // Update profile
       const response = await userProfileService.updateProfile(updatedUser);
-      
-      // Update auth context
-      await updateUser(response);
       
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
       

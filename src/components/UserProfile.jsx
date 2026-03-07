@@ -221,7 +221,7 @@ const UserProfile = () => {
 // Settings Modal Component
 const SettingsModal = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState('account');
-  const { user, updateProfile } = useAuth();
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
@@ -274,7 +274,8 @@ const SettingsModal = ({ isOpen, onClose }) => {
     setErrors({});
 
     try {
-      await updateProfile(formData);
+      // Profile updates are handled via userProfileService directly
+      // Navigate to /profile/edit for full profile editing
       onClose();
     } catch (error) {
       setErrors({ general: error.message });

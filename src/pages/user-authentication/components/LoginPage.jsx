@@ -1,48 +1,76 @@
-import React from 'react';
-import { useForm } from 'react-hook-form';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import SocialLogins from './SocialLogins';
 
-const LoginPage = () => {
-  const { register, handleSubmit, formState: { errors } } = useForm();
-  const { login, isLoading, error } = useAuth();
+const PLAYER_API = import.meta.env.VITE_PLAYER_API_URL || 'http://localhost:8084';
 
-  const onSubmit = (data) => {
-    login(data.email, data.password);
+const LoginPage = () => {
+  const { login } = useAuth();
+  const [email, setEmail]       = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError]       = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${PLAYER_API}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) {
+        const msg = await res.text().catch(() => 'Login failed');
+        throw new Error(msg);
+      }
+      const authResponse = await res.json();
+      login(authResponse);
+    } catch (err) {
+      setError(err.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div>
       <h2 className="text-2xl font-bold text-text-primary mb-2">Welcome Back</h2>
       <p className="text-text-secondary mb-6">Sign in to continue your journey.</p>
-      
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+
+      <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           label="Email"
           type="email"
-          {...register('email', { required: 'Email is required' })}
-          error={errors.email}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          disabled={isLoading}
         />
         <Input
           label="Password"
           type="password"
-          {...register('password', { required: 'Password is required' })}
-          error={errors.password}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          disabled={isLoading}
         />
         <div className="flex items-center justify-between">
           <div />
-          <Link to="/forgot-password"
+          <Link
+            to="/forgot-password"
             className="text-sm font-medium text-primary hover:underline"
           >
             Forgot Password?
           </Link>
         </div>
-        
+
         {error && <p className="text-red-500 text-sm">{error}</p>}
-        
+
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? 'Signing In...' : 'Sign In'}
         </Button>
