@@ -2,8 +2,11 @@ package com.topplayersofallsports.playerservice.repository;
 
 import com.topplayersofallsports.playerservice.entity.Player;
 import com.topplayersofallsports.playerservice.entity.Sport;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
@@ -59,4 +62,17 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
     
     @Query("SELECT p FROM Player p WHERE p.sport = :sport AND p.currentRank = :rank")
     Optional<Player> findByRankAndSport(Integer rank, Sport sport);
+
+    // Full-text search across name, team, nationality with optional sport filter
+    @Query("SELECT p FROM Player p WHERE " +
+           "(:sport IS NULL OR CAST(p.sport AS string) = :sport) AND " +
+           "(LOWER(p.name) LIKE LOWER(CONCAT('%', :q, '%')) OR " +
+           " LOWER(COALESCE(p.team, '')) LIKE LOWER(CONCAT('%', :q, '%')) OR " +
+           " LOWER(COALESCE(p.nationality, '')) LIKE LOWER(CONCAT('%', :q, '%')))" +
+           " ORDER BY p.currentRank ASC NULLS LAST")
+    Page<Player> searchPlayers(
+        @Param("q") String q,
+        @Param("sport") String sport,
+        Pageable pageable
+    );
 }
