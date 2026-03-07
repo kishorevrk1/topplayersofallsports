@@ -49,21 +49,34 @@ spring:
     redis:
       time-to-live: 604800000 # 7 days
 
-# OpenRouter AI Configuration
+# AI Provider Configuration
+# Currently: Groq (OpenAI-compatible, free tier, no Venice throttling)
+# To switch to Gemini: base-url: https://generativelanguage.googleapis.com/v1beta/openai
+#                      model: gemini-2.0-flash  |  secondary-model: gemini-1.5-flash
+#                      (1,000,000 TPM free — virtually unlimited)
 openrouter:
-  api-key: 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
+  api-key: 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
   base-url: https://openrouter.ai/api/v1
-  model: tngtech/deepseek-r1t-chimera:free  # Free tier model
+  model: anthropic/claude-3-5-haiku-20241022    # Claude Haiku via BYOK — routes to Anthropic directly, no Venice
+  secondary-model: anthropic/claude-3-haiku-20240307
   site-url: https://topplayersofallsports.com
   site-name: TopPlayersOfAllSports
-  timeout-seconds: 60
-  max-tokens: 4000
+  timeout-seconds: 120
+  max-tokens: 4096
 
-# API-Sports Configuration - REMOVED (AI-ONLY APPROACH)
-# apisports:
-#   api-key: REMOVED
-#   base-url: https://v3.football.api-sports.io
-#   timeout-seconds: 30
+# Anthropic Direct API (used by Top100SeedingService — no OpenRouter proxy)
+anthropic:
+  api-key: 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
+  model: claude-3-5-haiku-20241022    # Fast, cheap, excellent JSON generation
+  max-tokens: 4096
+  timeout-seconds: 120
+
+# API-Sports Configuration - Football stats as AI prompt context
+apisports:
+  football:
+    key: 85d68b544dc24999df5e7a90cb8933bd
+    base-url: https://v3.football.api-sports.io
+    timeout-seconds: 30
 
 # Player Sync Configuration
 player:
@@ -102,8 +115,12 @@ ai:
       awards-weight: 0.20
       era-adjusted-weight: 0.30
     prompt:
-      temperature: 0.7
+      temperature: 0.3   # Lower temperature for factual accuracy in consensus mode
       max-retries: 3
+    consensus:
+      stale-days: 7      # Re-evaluate ratings older than 7 days
+      high-confidence-threshold: 3.0   # Max divergence for HIGH confidence
+      medium-confidence-threshold: 6.0 # Max divergence for MEDIUM confidence
 
 # Logging
 logging:
@@ -146,3 +163,17 @@ temporal:
 ranking:
   auto-initialize: false  # Automatically initialize all sports on startup (set to false for manual control)
   auto-initialize-delay-seconds: 30  # Delay before starting auto-initialization
+
+# ── Google OAuth2 ──────────────────────────────────────────
+google:
+  oauth2:
+    client-id: ${GOOGLE_CLIENT_ID}
+    client-secret: ${GOOGLE_CLIENT_SECRET}
+    token-url: https://oauth2.googleapis.com/token
+    user-info-url: https://www.googleapis.com/oauth2/v1/userinfo
+
+# ── JWT ────────────────────────────────────────────────────
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expiry-ms: 900000
+  refresh-token-expiry-ms: 604800000
