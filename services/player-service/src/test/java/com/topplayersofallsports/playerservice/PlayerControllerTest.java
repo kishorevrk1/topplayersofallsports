@@ -3,6 +3,10 @@ package com.topplayersofallsports.playerservice;
 import com.topplayersofallsports.playerservice.controller.PlayerController;
 import com.topplayersofallsports.playerservice.entity.Player;
 import com.topplayersofallsports.playerservice.entity.Sport;
+import com.topplayersofallsports.playerservice.repository.AIAnalysisRepository;
+import com.topplayersofallsports.playerservice.repository.PlayerRepository;
+import com.topplayersofallsports.playerservice.repository.RatingConsensusRepository;
+import com.topplayersofallsports.playerservice.service.JwtService;
 import com.topplayersofallsports.playerservice.service.PlayerService;
 import com.topplayersofallsports.playerservice.service.PlayerRegistrationService;
 import org.junit.jupiter.api.DisplayName;
@@ -24,6 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Integration tests for PlayerController
  */
 @WebMvcTest(PlayerController.class)
+@WithMockUser
 class PlayerControllerTest {
 
     @Autowired
@@ -34,6 +39,18 @@ class PlayerControllerTest {
 
     @MockBean
     private PlayerRegistrationService playerRegistrationService;
+
+    @MockBean
+    private PlayerRepository playerRepository;
+
+    @MockBean
+    private AIAnalysisRepository aiAnalysisRepository;
+
+    @MockBean
+    private RatingConsensusRepository ratingConsensusRepository;
+
+    @MockBean
+    private JwtService jwtService;
 
     @Test
     @DisplayName("GET /api/players should return players list")
@@ -61,7 +78,8 @@ class PlayerControllerTest {
             .name("Test Player")
             .sport(Sport.FOOTBALL)
             .build();
-        when(playerService.getPlayerById(1L)).thenReturn(Optional.of(player));
+        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
+        when(aiAnalysisRepository.findByPlayer(player)).thenReturn(Optional.empty());
 
         // Act & Assert
         mockMvc.perform(get("/api/players/1"))
