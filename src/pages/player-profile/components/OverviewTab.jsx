@@ -19,8 +19,16 @@ const OverviewTab = ({ player }) => {
           playerApiService.getRatingBreakdown(player.id),
           playerApiService.getRatingHistory(player.id),
         ]);
-        if (breakdown.status === 'fulfilled') setRatingBreakdown(breakdown.value);
-        if (history.status === 'fulfilled') setRatingHistory(history.value?.history || []);
+        if (breakdown.status === 'fulfilled') {
+          setRatingBreakdown(breakdown.value);
+        } else {
+          console.error('Rating breakdown fetch failed:', breakdown.reason);
+        }
+        if (history.status === 'fulfilled') {
+          setRatingHistory(history.value?.history || []);
+        } else {
+          console.error('Rating history fetch failed:', history.reason);
+        }
       } catch (error) {
         console.error('Error fetching rating data:', error);
       } finally {
@@ -53,18 +61,20 @@ const OverviewTab = ({ player }) => {
       </div>
 
       {/* AI-Generated Bio */}
-      <div className="bg-card border border-border rounded-lg p-6">
-        <div className="flex items-center space-x-2 mb-4">
-          <Icon name="User" size={20} className="text-accent" />
-          <h3 className="text-lg font-semibold">Player Biography</h3>
-          <span className="bg-accent/10 text-accent text-xs font-medium px-2 py-1 rounded-full">
-            AI Generated
-          </span>
+      {player.biography && (
+        <div className="bg-card border border-border rounded-lg p-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <Icon name="User" size={20} className="text-accent" />
+            <h3 className="text-lg font-semibold">Player Biography</h3>
+            <span className="bg-accent/10 text-accent text-xs font-medium px-2 py-1 rounded-full">
+              AI Generated
+            </span>
+          </div>
+          <p className="text-text-secondary leading-relaxed">
+            {player.biography}
+          </p>
         </div>
-        <p className="text-text-secondary leading-relaxed">
-          {player.biography}
-        </p>
-      </div>
+      )}
 
       {/* Career Highlights */}
       {player.careerHighlights?.length > 0 && (
@@ -85,7 +95,7 @@ const OverviewTab = ({ player }) => {
               const icon        = isString ? 'Trophy' : (highlight.icon || 'Trophy');
 
               return (
-                <div key={index} className="flex items-start space-x-4 p-4 bg-muted rounded-lg">
+                <div key={`${title}-${index}`} className="flex items-start space-x-4 p-4 bg-muted rounded-lg">
                   <div className="flex-shrink-0 w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
                     <Icon name={icon} size={18} className="text-accent" />
                   </div>
@@ -162,7 +172,7 @@ const OverviewTab = ({ player }) => {
                 const title = typeof achievement === 'string' ? achievement : (achievement.title || achievement);
                 const year  = typeof achievement === 'string' ? '' : (achievement.year || '');
                 return (
-                  <div key={index} className="flex items-center space-x-3">
+                  <div key={`${title}-${index}`} className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-accent/10 rounded-full flex items-center justify-center shrink-0">
                       <Icon name="Medal" size={14} className="text-accent" />
                     </div>
