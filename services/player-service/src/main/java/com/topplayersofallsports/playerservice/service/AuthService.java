@@ -3,6 +3,7 @@ package com.topplayersofallsports.playerservice.service;
 import com.topplayersofallsports.playerservice.dto.AuthResponse;
 import com.topplayersofallsports.playerservice.entity.RefreshToken;
 import com.topplayersofallsports.playerservice.entity.User;
+import com.topplayersofallsports.playerservice.exception.AuthException;
 import com.topplayersofallsports.playerservice.repository.RefreshTokenRepository;
 import com.topplayersofallsports.playerservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +31,13 @@ public class AuthService {
 
     @Transactional
     public AuthResponse authenticateWithGoogle(String code, String redirectUri) {
-        Map<String, Object> googleUser = googleOAuthService.exchangeCodeForUserInfo(code, redirectUri);
+        Map<String, Object> googleUser;
+        try {
+            googleUser = googleOAuthService.exchangeCodeForUserInfo(code, redirectUri);
+        } catch (Exception e) {
+            log.warn("Google OAuth failed: {}", e.getMessage());
+            throw new AuthException("Google authentication failed");
+        }
 
         String googleId = (String) googleUser.get("id");
         String email    = (String) googleUser.get("email");
@@ -54,15 +61,15 @@ public class AuthService {
     @Transactional
     public AuthResponse refreshAccessToken(String refreshTokenValue) {
         RefreshToken refreshToken = refreshTokenRepository.findByToken(refreshTokenValue)
-                .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
+                .orElseThrow(() -> new AuthException("Invalid refresh token"));
 
         if (refreshToken.isExpired()) {
             refreshTokenRepository.delete(refreshToken);
-            throw new RuntimeException("Refresh token expired — please sign in again");
+            throw new AuthException("Refresh token expired — please sign in again");
         }
 
         User user = userRepository.findById(refreshToken.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new AuthException("User not found"));
 
         String newAccessToken = jwtService.generateAccessToken(
                 user.getId(), user.getEmail(), user.getRole().name());
