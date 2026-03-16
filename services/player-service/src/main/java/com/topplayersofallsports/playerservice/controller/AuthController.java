@@ -8,6 +8,7 @@ import com.topplayersofallsports.playerservice.service.AuthService;
 import com.topplayersofallsports.playerservice.service.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,7 +25,7 @@ public class AuthController {
     private final UserRepository userRepository;
 
     @PostMapping("/google")
-    public ResponseEntity<AuthResponse> googleLogin(@RequestBody GoogleCallbackRequest request) {
+    public ResponseEntity<AuthResponse> googleLogin(@Valid @RequestBody GoogleCallbackRequest request) {
         log.info("Google OAuth callback received");
         AuthResponse response = authService.authenticateWithGoogle(request.getCode(), request.getRedirectUri());
         return ResponseEntity.ok(response);
