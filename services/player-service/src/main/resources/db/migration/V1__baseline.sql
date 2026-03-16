@@ -1,0 +1,2 @@
+-- V1 baseline: schema already managed by Hibernate ddl-auto
+-- Flyway introduced into existing project; this baseline marks the current state as applied.
