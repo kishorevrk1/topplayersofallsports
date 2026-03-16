@@ -5,11 +5,9 @@ import com.topplayersofallsports.playerservice.dto.PlayerRegistrationRequest;
 import com.topplayersofallsports.playerservice.dto.PlayerRegistrationResponse;
 import com.topplayersofallsports.playerservice.entity.AIAnalysis;
 import com.topplayersofallsports.playerservice.entity.Player;
-import com.topplayersofallsports.playerservice.entity.RatingConsensus;
 import com.topplayersofallsports.playerservice.entity.Sport;
 import com.topplayersofallsports.playerservice.repository.AIAnalysisRepository;
 import com.topplayersofallsports.playerservice.repository.PlayerRepository;
-import com.topplayersofallsports.playerservice.repository.RatingConsensusRepository;
 import com.topplayersofallsports.playerservice.service.PlayerRegistrationService;
 import com.topplayersofallsports.playerservice.service.PlayerService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,7 +34,6 @@ public class PlayerController {
     private final PlayerRegistrationService playerRegistrationService;
     private final PlayerRepository playerRepository;
     private final AIAnalysisRepository aiAnalysisRepository;
-    private final RatingConsensusRepository ratingConsensusRepository;
     
     @GetMapping
     @Operation(summary = "Get all players by sport")
@@ -89,7 +86,7 @@ public class PlayerController {
         response.put("currentRank", player.getCurrentRank());
         response.put("isActive", player.getIsActive());
         response.put("rankingScore", player.getRankingScore());
-        
+
         if (analysisOpt.isPresent()) {
             AIAnalysis analysis = analysisOpt.get();
             response.put("aiRating", analysis.getAiRating());
@@ -175,7 +172,7 @@ public class PlayerController {
                     p.put("strengths", analysis.getStrengths());
                     p.put("careerHighlights", analysis.getCareerHighlights());
                 });
-                
+
                 return p;
             }).toList();
             
@@ -248,7 +245,7 @@ public class PlayerController {
     }
 
     private ComparisonResponse.PlayerSnapshot toSnapshot(Player player) {
-        Optional<RatingConsensus> rc = ratingConsensusRepository.findByPlayer(player);
+        Optional<AIAnalysis> analysis = aiAnalysisRepository.findByPlayer(player);
         return ComparisonResponse.PlayerSnapshot.builder()
             .id(player.getId())
             .name(player.getName())
@@ -260,12 +257,7 @@ public class PlayerController {
             .age(player.getAge())
             .photoUrl(player.getPhotoUrl())
             .isActive(player.getIsActive())
-            .consensusScore(rc.map(RatingConsensus::getConsensusRating).orElse(null))
-            .confidenceLevel(rc.map(RatingConsensus::getConfidenceLevel).orElse(null))
-            .model1Score(rc.map(RatingConsensus::getModel1Rating).orElse(null))
-            .model2Score(rc.map(RatingConsensus::getModel2Rating).orElse(null))
-            .divergenceScore(rc.map(RatingConsensus::getDivergenceScore).orElse(null))
-            .criteriaBreakdown(rc.map(RatingConsensus::getCriteriaBreakdown).orElse(null))
+            .consensusScore(analysis.map(a -> a.getAiRating() != null ? a.getAiRating().doubleValue() : null).orElse(player.getRankingScore()))
             .build();
     }
 

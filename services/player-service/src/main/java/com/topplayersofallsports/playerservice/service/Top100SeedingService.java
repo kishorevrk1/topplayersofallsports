@@ -22,119 +22,172 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Service to seed the database with Top 100 All-Time Greatest Players for each sport.
- * Uses AI (DeepSeek R1 via OpenRouter) to generate comprehensive player data.
- * 
+ * Uses Claude (Anthropic API directly) to generate comprehensive player data.
+ *
  * Since it's 2026, we get the Top 100 players up to and including 2025.
  */
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class Top100SeedingService {
-    
+
     private final OpenRouterClient openRouterClient;
     private final PlayerRepository playerRepository;
     private final AIAnalysisRepository aiAnalysisRepository;
     private final ObjectMapper objectMapper;
-    
+    private final PlayerImageEnrichmentService imageEnrichmentService;
+
     // Process in batches to handle rate limits and token limits
     private static final int BATCH_SIZE = 10;
-    private static final int BATCH_DELAY_SECONDS = 5;
+    private static final int BATCH_DELAY_SECONDS = 10; // Anthropic direct — generous rate limits, no proxy throttling
     
     /**
      * Seed Top 100 players for a specific sport.
      * Generates player data using AI and stores in database.
+     * NOT @Transactional — each savePlayer runs in its own Spring Data transaction,
+     * so one duplicate/failure does not poison the Hibernate session for the whole run.
      */
-    @Transactional
     public int seedTop100ForSport(Sport sport) {
         log.info("🚀 Starting Top 100 seeding for sport: {}", sport);
-        
+
         int totalSeeded = 0;
-        
+        // Track all normalized names saved so far to deduplicate across batches
+        List<String> alreadySavedNames = new ArrayList<>();
+
+        // Seed any existing players into the dedup list
+        playerRepository.findBySport(sport)
+                .forEach(p -> alreadySavedNames.add(normalizeName(p.getName())));
+
         // Process in batches of 10 to avoid token limits and rate limits
         for (int batch = 0; batch < 10; batch++) {
             int startRank = batch * BATCH_SIZE + 1;
             int endRank = startRank + BATCH_SIZE - 1;
-            
+
             log.info("📋 Processing batch {} (ranks {}-{}) for {}", batch + 1, startRank, endRank, sport);
-            
+
             try {
-                List<Top100PlayerInfo> players = generatePlayersBatch(sport, startRank, endRank);
-                
+                List<Top100PlayerInfo> players = generatePlayersBatch(sport, startRank, endRank, alreadySavedNames);
+
                 for (Top100PlayerInfo playerInfo : players) {
                     try {
-                        savePlayer(playerInfo, sport);
+                        // In-memory fuzzy duplicate check BEFORE expensive DB+photo ops
+                        String newNorm = normalizeName(playerInfo.getName());
+                        if (isFuzzyDuplicate(newNorm, alreadySavedNames)) {
+                            log.info("⚠️ Skipping fuzzy duplicate '{}' (similar name already saved)", playerInfo.getName());
+                            continue;
+                        }
+
+                        // Resolve photo BEFORE the DB transaction — Wikipedia call outside @Transactional
+                        String displayName = playerInfo.getDisplayName() != null
+                                ? playerInfo.getDisplayName() : playerInfo.getName();
+                        String photoUrl = imageEnrichmentService.findPhotoUrl(
+                                displayName, playerInfo.getName(), sport.name().toLowerCase());
+
+                        savePlayer(playerInfo, sport, photoUrl);
+                        alreadySavedNames.add(newNorm);
                         totalSeeded++;
-                        log.info("✅ Saved player #{}: {} ({})", playerInfo.getRank(), playerInfo.getName(), sport);
+                        log.info("✅ Saved player #{}: {} ({}){}",
+                                playerInfo.getRank(), playerInfo.getName(), sport,
+                                photoUrl != null ? " [photo ✓]" : " [no photo]");
                     } catch (Exception e) {
                         log.error("❌ Failed to save player {}: {}", playerInfo.getName(), e.getMessage());
                     }
                 }
-                
+
                 // Wait between batches to respect rate limits
                 if (batch < 9) {
                     log.info("⏳ Waiting {}s before next batch...", BATCH_DELAY_SECONDS);
                     TimeUnit.SECONDS.sleep(BATCH_DELAY_SECONDS);
                 }
-                
+
             } catch (Exception e) {
                 log.error("❌ Failed to process batch {} for {}: {}", batch + 1, sport, e.getMessage());
             }
         }
-        
+
         log.info("🎉 Completed seeding for {}. Total players: {}", sport, totalSeeded);
         return totalSeeded;
     }
-    
+
     /**
-     * Generate a batch of players using AI
+     * Fuzzy duplicate detection: returns true if newNorm is a substring of any saved name
+     * or any saved name is a substring of newNorm AND they share the same last name token.
+     * This catches "zinedine zidane" vs "zinedine yazid zidane".
      */
-    private List<Top100PlayerInfo> generatePlayersBatch(Sport sport, int startRank, int endRank) {
+    private boolean isFuzzyDuplicate(String newNorm, List<String> savedNames) {
+        String[] newTokens = newNorm.split("\\s+");
+        String newLastToken = newTokens[newTokens.length - 1];
+        for (String saved : savedNames) {
+            String[] savedTokens = saved.split("\\s+");
+            String savedLastToken = savedTokens[savedTokens.length - 1];
+            // Same last name AND at least one other token in common → duplicate
+            if (newLastToken.equals(savedLastToken) && newTokens.length > 1) {
+                for (String nt : newTokens) {
+                    for (String st : savedTokens) {
+                        if (!nt.equals(newLastToken) && nt.equals(st)) {
+                            return true; // Shared non-last-name token + same last name
+                        }
+                    }
+                }
+            }
+            // One is a subsequence of the other → duplicate
+            if (saved.contains(newNorm) || newNorm.contains(saved)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Generate a batch of players using AI, passing already-saved names to avoid repeats.
+     */
+    private List<Top100PlayerInfo> generatePlayersBatch(Sport sport, int startRank, int endRank,
+                                                         List<String> alreadySavedNames) {
         String sportName = getSportDisplayName(sport);
-        
-        String prompt = buildBatchPrompt(sportName, startRank, endRank);
-        
+        String prompt = buildBatchPrompt(sportName, startRank, endRank, alreadySavedNames);
         log.debug("Sending AI request for {} ranks {}-{}", sport, startRank, endRank);
-        
         String response = openRouterClient.chat(prompt, 0.7);
-        
         return parsePlayersResponse(response, sport);
     }
     
     /**
-     * Build the AI prompt for generating a batch of players
+     * Build the AI prompt for generating a batch of players, excluding already-generated ones.
      */
-    private String buildBatchPrompt(String sportName, int startRank, int endRank) {
-        return String.format("""
-            You are a world-class sports historian and analyst. Generate the ALL-TIME GREATEST %s players ranked #%d to #%d.
-            
-            This is for "Top 100 All-Time Greatest Players" up to and including 2025.
-            Consider their entire career achievements, impact, longevity, championships, individual awards, and legacy.
-            
-            For each player, provide a JSON object with these EXACT fields:
-            - rank: integer (%d-%d)
-            - name: string (full official name)
-            - displayName: string (common name/nickname fans know them by)
-            - nationality: string (country)
-            - position: string (playing position)
-            - team: string (most iconic team they played for)
-            - birthYear: integer (year of birth)
-            - height: string (e.g., "6'2\"" or "188 cm")
-            - weight: string (e.g., "185 lbs" or "84 kg")
-            - isActive: boolean (still actively playing as of 2025?)
-            - rating: integer (0-100, your assessment of their all-time greatness)
-            - biography: string (2-3 sentence career summary)
-            - careerHighlights: array of strings (3-5 major achievements)
-            - strengths: array of strings (3 key skills/attributes)
-            - legacySummary: string (one impactful sentence about their legacy)
-            
-            IMPORTANT: 
-            - Return ONLY a valid JSON array of player objects
-            - No markdown, no explanation text, just pure JSON
-            - Include exactly %d players ranked from %d to %d
-            - Make sure the data is factually accurate for real players
-            
-            JSON response:
-            """, sportName, startRank, endRank, startRank, endRank, endRank - startRank + 1, startRank, endRank);
+    private String buildBatchPrompt(String sportName, int startRank, int endRank,
+                                     List<String> alreadySavedNames) {
+        String exclusionBlock = alreadySavedNames.isEmpty() ? "" :
+            "\nDO NOT include any of these already-listed players (they appear in earlier ranks):\n" +
+            String.join(", ", alreadySavedNames) + "\n";
+
+        int count = endRank - startRank + 1;
+        return "You are a world-class sports historian and analyst. Generate the ALL-TIME GREATEST " + sportName +
+            " players ranked #" + startRank + " to #" + endRank + ".\n" +
+            exclusionBlock +
+            "\nThis is for \"Top 100 All-Time Greatest Players\" up to and including 2025.\n" +
+            "Consider their entire career achievements, impact, longevity, championships, individual awards, and legacy.\n" +
+            "\nFor each player, provide a JSON object with these EXACT fields:\n" +
+            "- rank: integer (" + startRank + "-" + endRank + ")\n" +
+            "- name: string (common name fans know them by, e.g. \"Lionel Messi\" not \"Lionel Andres Messi\")\n" +
+            "- displayName: string (same as name — the fan-known name)\n" +
+            "- nationality: string (country)\n" +
+            "- position: string (playing position)\n" +
+            "- team: string (most iconic team they played for)\n" +
+            "- birthYear: integer (year of birth)\n" +
+            "- height: string (e.g., \"6'2\\\"\" or \"188 cm\")\n" +
+            "- weight: string (e.g., \"185 lbs\" or \"84 kg\")\n" +
+            "- isActive: boolean (still actively playing as of 2025?)\n" +
+            "- rating: integer (0-100, your assessment of their all-time greatness)\n" +
+            "- biography: string (2-3 sentence career summary)\n" +
+            "- careerHighlights: array of strings (3-5 major achievements)\n" +
+            "- strengths: array of strings (3 key skills/attributes)\n" +
+            "- legacySummary: string (one impactful sentence about their legacy)\n" +
+            "\nIMPORTANT:\n" +
+            "- Return ONLY a valid JSON array of player objects\n" +
+            "- No markdown, no explanation text, just pure JSON\n" +
+            "- Include exactly " + count + " players ranked from " + startRank + " to " + endRank + "\n" +
+            "- Use common fan-known names (NOT full official birth names)\n" +
+            "- Make sure the data is factually accurate for real players\n" +
+            "\nJSON response:";
     }
     
     /**
@@ -177,14 +230,25 @@ public class Top100SeedingService {
     }
     
     /**
-     * Save player and AI analysis to database
+     * Save player and AI analysis to database.
+     * Checks canonical_id first to skip cross-batch duplicates (AI sometimes
+     * repeats the same player at a different rank in a subsequent batch).
      */
     @Transactional
-    public void savePlayer(Top100PlayerInfo info, Sport sport) {
+    public void savePlayer(Top100PlayerInfo info, Sport sport, String resolvedPhotoUrl) {
         // Generate unique API ID for this player
         String apiPlayerId = sport.name() + "_TOP100_" + info.getRank();
-        
-        // Check if player already exists
+        String canonicalId = generateCanonicalId(info.getName(), sport);
+
+        // Check canonical_id first — catches same player returned at a different rank
+        Player existingByCanonical = playerRepository.findByCanonicalId(canonicalId).orElse(null);
+        if (existingByCanonical != null) {
+            log.debug("Skipping duplicate player '{}' (canonical_id '{}' already exists at rank {})",
+                info.getName(), canonicalId, existingByCanonical.getCurrentRank());
+            return;
+        }
+
+        // Check if player already exists by rank-based API ID
         Player existingPlayer = playerRepository.findByApiPlayerId(apiPlayerId).orElse(null);
         
         Player player;
@@ -219,11 +283,11 @@ public class Top100SeedingService {
             player.setAge(2025 - info.getBirthYear());
         }
         
-        // Generate photo URL placeholder (can be replaced with actual image search later)
-        player.setPhotoUrl(generatePhotoUrl(info));
+        // Use resolved Wikipedia photo, or fall back to avatar placeholder
+        player.setPhotoUrl(resolvedPhotoUrl != null ? resolvedPhotoUrl : generateFallbackPhotoUrl(info));
         
-        // Generate canonical ID for deduplication
-        player.setCanonicalId(generateCanonicalId(info.getName(), sport));
+        // Set canonical ID (already computed at top for duplicate check)
+        player.setCanonicalId(canonicalId);
         
         player = playerRepository.save(player);
         
@@ -245,7 +309,7 @@ public class Top100SeedingService {
         analysis.setBiography(info.getBiography());
         analysis.setCareerHighlights(info.getCareerHighlights());
         analysis.setGeneratedAt(LocalDateTime.now());
-        analysis.setLlmModel("deepseek-r1-top100-seeding");
+        analysis.setLlmModel("openrouter-top100-seeding");
         
         aiAnalysisRepository.save(analysis);
     }
@@ -276,16 +340,11 @@ public class Top100SeedingService {
     }
     
     /**
-     * Generate a placeholder photo URL (using a placeholder service)
+     * Fallback avatar URL when Wikipedia has no photo for a player.
      */
-    private String generatePhotoUrl(Top100PlayerInfo info) {
-        // Use a placeholder for now - can integrate actual photo search later
-        String searchTerm = info.getPhotoSearchTerm() != null 
-            ? info.getPhotoSearchTerm() 
-            : info.getName();
-        return "https://ui-avatars.com/api/?name=" + 
-            searchTerm.replace(" ", "+") + 
-            "&size=256&background=random";
+    private String generateFallbackPhotoUrl(Top100PlayerInfo info) {
+        String name = info.getDisplayName() != null ? info.getDisplayName() : info.getName();
+        return "https://ui-avatars.com/api/?name=" + name.replace(" ", "+") + "&size=256&background=random";
     }
     
     /**

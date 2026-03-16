@@ -5,6 +5,7 @@ import com.topplayersofallsports.playerservice.entity.Sport;
 import com.topplayersofallsports.playerservice.repository.PlayerRepository;
 import com.topplayersofallsports.playerservice.service.DataCleanupService;
 import com.topplayersofallsports.playerservice.service.PlayerDisplayNameService;
+import com.topplayersofallsports.playerservice.service.PlayerImageEnrichmentService;
 import com.topplayersofallsports.playerservice.service.PlayerRankingService;
 import com.topplayersofallsports.playerservice.service.PlayerService;
 import com.topplayersofallsports.playerservice.service.Top100SeedingService;
@@ -38,22 +39,25 @@ public class AdminController {
     private final DataCleanupService dataCleanupService;
     private final Top100SeedingService top100SeedingService;
     private final PlayerRepository playerRepository;
-    
+    private final PlayerImageEnrichmentService imageEnrichmentService;
+
     @Autowired(required = false)
     private WorkflowClient workflowClient;
-    
-    public AdminController(PlayerService playerService, 
+
+    public AdminController(PlayerService playerService,
                           PlayerDisplayNameService displayNameService,
                           PlayerRankingService rankingService,
                           DataCleanupService dataCleanupService,
                           Top100SeedingService top100SeedingService,
-                          PlayerRepository playerRepository) {
+                          PlayerRepository playerRepository,
+                          PlayerImageEnrichmentService imageEnrichmentService) {
         this.playerService = playerService;
         this.displayNameService = displayNameService;
         this.rankingService = rankingService;
         this.dataCleanupService = dataCleanupService;
         this.top100SeedingService = top100SeedingService;
         this.playerRepository = playerRepository;
+        this.imageEnrichmentService = imageEnrichmentService;
     }
     
     @PostMapping("/sync/football")
@@ -549,6 +553,45 @@ public class AdminController {
         }
     }
     
+    // ==================== IMAGE ENRICHMENT FROM API-SPORTS ====================
+
+    @PostMapping("/enrich-images/{sport}")
+    @Operation(summary = "Enrich player photos from API-Sports",
+               description = "Searches API-Sports for real player photos and stores them in the DB. Runs asynchronously. Only updates players without an existing photo.")
+    public ResponseEntity<Map<String, Object>> enrichImages(@PathVariable String sport) {
+        log.info("🖼️  Admin request to enrich images for: {}", sport);
+
+        try {
+            Sport sportEnum = Sport.valueOf(sport.toUpperCase());
+
+            CompletableFuture.runAsync(() -> {
+                Map<String, Object> result = imageEnrichmentService.enrichImagesForSport(sportEnum);
+                log.info("🖼️  Image enrichment complete for {}: {}", sport, result);
+            });
+
+            return ResponseEntity.accepted().body(Map.of(
+                "success", true,
+                "sport", sport.toUpperCase(),
+                "message", "Image enrichment started for " + sport.toUpperCase(),
+                "description", "Searching API-Sports for real player photos (seasons 2024, 2022)",
+                "note", "Only players without a real photo will be updated. Check logs for progress.",
+                "checkEndpoint", "/api/admin/players/top100/" + sport.toLowerCase()
+            ));
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "error", "Invalid sport. Valid values: FOOTBALL, BASKETBALL, MMA, CRICKET, TENNIS"
+            ));
+        } catch (Exception e) {
+            log.error("Error starting image enrichment for {}: {}", sport, e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(Map.of(
+                "success", false,
+                "error", e.getMessage()
+            ));
+        }
+    }
+
     @PostMapping("/top100/seed-football-basketball")
     @Operation(summary = "Quick Start: Seed Top 100 for Football AND Basketball",
                description = "Convenience endpoint to seed both major sports at once. Takes 10-20 minutes total.")
