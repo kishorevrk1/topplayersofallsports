@@ -5,32 +5,18 @@ import io.temporal.workflow.WorkflowInterface;
 import io.temporal.workflow.WorkflowMethod;
 
 /**
- * Temporal workflow for player ranking operations
- * Note: Temporal allows only ONE @WorkflowMethod per interface
+ * Temporal workflow for initializing the top-50 ranking for a single sport.
+ *
+ * Temporal rule: exactly ONE @WorkflowMethod per @WorkflowInterface.
+ * Other entry points (all-sports, monthly update) live in their own interfaces:
+ *   - AllSportsRankingWorkflow  → initializeAllSports()
  */
 @WorkflowInterface
 public interface PlayerRankingWorkflow {
-    
-    /**
-     * Initialize top 50 players for a single sport
-     */
+
+    /** Initialize top 50 players for a single sport. */
     @WorkflowMethod
     RankingWorkflowResult initializeTop50(Sport sport);
-    
-    /**
-     * Initialize top 50 for all sports (use this as entry point for all sports)
-     */
-    AllSportsRankingResult initializeAllSports();
-    
-    /**
-     * Monthly ranking update for a sport
-     */
-    RankingWorkflowResult updateMonthlyRankings(Sport sport);
-    
-    /**
-     * Monthly ranking update for all sports
-     */
-    AllSportsRankingResult updateAllSportsMonthly();
     
     // DTOs
     
