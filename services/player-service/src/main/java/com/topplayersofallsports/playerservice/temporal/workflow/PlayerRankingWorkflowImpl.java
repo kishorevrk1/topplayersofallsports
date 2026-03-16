@@ -3,7 +3,6 @@ package com.topplayersofallsports.playerservice.temporal.workflow;
 import com.topplayersofallsports.playerservice.entity.Sport;
 import com.topplayersofallsports.playerservice.temporal.activity.PlayerRankingActivities;
 import com.topplayersofallsports.playerservice.temporal.activity.PlayerRankingActivities.InitializeTop50Result;
-import com.topplayersofallsports.playerservice.temporal.activity.PlayerRankingActivities.RankingUpdateResult;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.workflow.Workflow;
 import lombok.extern.slf4j.Slf4j;
@@ -140,78 +139,4 @@ public class PlayerRankingWorkflowImpl implements PlayerRankingWorkflow, AllSpor
         );
     }
     
-    @Override
-    public RankingWorkflowResult updateMonthlyRankings(Sport sport) {
-        long startTime = Workflow.currentTimeMillis();
-        
-        Workflow.getLogger(PlayerRankingWorkflowImpl.class)
-            .info("Starting monthly ranking update for {}", sport);
-        
-        try {
-            RankingUpdateResult result = activities.updateRankingsForSport(sport);
-            
-            long duration = (Workflow.currentTimeMillis() - startTime) / 1000;
-            
-            return new RankingWorkflowResult(
-                sport,
-                result.success(),
-                result.playersUpdated(),
-                result.message(),
-                duration
-            );
-            
-        } catch (Exception e) {
-            long duration = (Workflow.currentTimeMillis() - startTime) / 1000;
-            return new RankingWorkflowResult(
-                sport,
-                false,
-                0,
-                "Update failed: " + e.getMessage(),
-                duration
-            );
-        }
-    }
-    
-    @Override
-    public AllSportsRankingResult updateAllSportsMonthly() {
-        long startTime = Workflow.currentTimeMillis();
-        
-        Workflow.getLogger(PlayerRankingWorkflowImpl.class)
-            .info("Starting monthly ranking update for ALL sports");
-        
-        Sport[] allSports = {Sport.FOOTBALL, Sport.BASKETBALL, Sport.CRICKET, Sport.TENNIS, Sport.MMA};
-        Map<Sport, RankingWorkflowResult> results = new HashMap<>();
-        int successful = 0;
-        int failed = 0;
-        
-        for (Sport sport : allSports) {
-            RankingWorkflowResult result = updateMonthlyRankings(sport);
-            results.put(sport, result);
-            
-            if (result.success()) {
-                successful++;
-            } else {
-                failed++;
-            }
-            
-            // Delay between sports
-            if (results.size() < allSports.length) {
-                Workflow.sleep(Duration.ofSeconds(5));
-            }
-        }
-        
-        long totalDuration = (Workflow.currentTimeMillis() - startTime) / 1000;
-        
-        Workflow.getLogger(PlayerRankingWorkflowImpl.class)
-            .info("Completed monthly update for all sports: {} successful, {} failed in {}s",
-                successful, failed, totalDuration);
-        
-        return new AllSportsRankingResult(
-            allSports.length,
-            successful,
-            failed,
-            results,
-            totalDuration
-        );
-    }
 }

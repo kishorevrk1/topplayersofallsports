@@ -4,9 +4,7 @@ import com.topplayersofallsports.playerservice.temporal.activity.BatchRegistrati
 import com.topplayersofallsports.playerservice.temporal.activity.PlayerEnrichmentActivitiesImpl;
 import com.topplayersofallsports.playerservice.temporal.activity.PlayerRankingActivitiesImpl;
 import com.topplayersofallsports.playerservice.temporal.activity.PlayerRegistrationActivitiesImpl;
-import com.topplayersofallsports.playerservice.temporal.activity.RatingActivitiesImpl;
 import com.topplayersofallsports.playerservice.temporal.workflow.BatchPlayerRegistrationWorkflowImpl;
-import com.topplayersofallsports.playerservice.temporal.workflow.MonthlyRatingRefreshWorkflowImpl;
 import com.topplayersofallsports.playerservice.temporal.workflow.PlayerEnrichmentWorkflowImpl;
 import com.topplayersofallsports.playerservice.temporal.workflow.PlayerRankingWorkflowImpl;
 import com.topplayersofallsports.playerservice.temporal.workflow.PlayerRegistrationWorkflowImpl;
@@ -56,7 +54,6 @@ public class TemporalConfig implements SmartLifecycle {
     private final BatchRegistrationActivitiesImpl batchActivities;
     private final PlayerRankingActivitiesImpl rankingActivities;
     private final PlayerEnrichmentActivitiesImpl enrichmentActivities;
-    private final RatingActivitiesImpl ratingActivities;
 
     private volatile boolean running = false;
     private WorkerFactory workerFactory; // set by configuredWorkerFactory() @Bean
@@ -94,16 +91,14 @@ public class TemporalConfig implements SmartLifecycle {
                 PlayerRegistrationWorkflowImpl.class,
                 BatchPlayerRegistrationWorkflowImpl.class,
                 PlayerRankingWorkflowImpl.class,
-                PlayerEnrichmentWorkflowImpl.class,
-                MonthlyRatingRefreshWorkflowImpl.class
+                PlayerEnrichmentWorkflowImpl.class
         );
 
         worker.registerActivitiesImplementations(
                 registrationActivities,
                 batchActivities,
                 rankingActivities,
-                enrichmentActivities,
-                ratingActivities
+                enrichmentActivities
         );
 
         this.workerFactory = factory;
