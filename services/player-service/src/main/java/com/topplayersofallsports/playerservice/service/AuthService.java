@@ -71,12 +71,22 @@ public class AuthService {
         User user = userRepository.findById(refreshToken.getUserId())
                 .orElseThrow(() -> new AuthException("User not found"));
 
+        // Rotate: delete consumed token, issue a fresh one
+        refreshTokenRepository.delete(refreshToken);
+        refreshTokenRepository.flush();   // ensure DELETE committed before INSERT to avoid UK conflict
+
+        RefreshToken newRefreshToken = refreshTokenRepository.save(RefreshToken.builder()
+                .token(UUID.randomUUID().toString())
+                .userId(user.getId())
+                .expiresAt(LocalDateTime.now().plusSeconds(refreshTokenExpiryMs / 1000))
+                .build());
+
         String newAccessToken = jwtService.generateAccessToken(
                 user.getId(), user.getEmail(), user.getRole().name());
 
         return AuthResponse.builder()
                 .accessToken(newAccessToken)
-                .refreshToken(refreshTokenValue)
+                .refreshToken(newRefreshToken.getToken())
                 .userId(user.getId())
                 .email(user.getEmail())
                 .name(user.getName())
