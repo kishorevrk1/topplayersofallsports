@@ -23,14 +23,6 @@ public class ComparisonResponse {
         private Integer age;
         private String photoUrl;
         private Boolean isActive;
-
-        // ACR rating data (null if not yet rated)
-        private Double consensusScore;
-        private String confidenceLevel;
-        private Double model1Score;
-        private Double model2Score;
-        private Double divergenceScore;
-        /** JSON string: {"peakPerformance": 28.5, "longevity": 18.2, ...} */
-        private String criteriaBreakdown;
+        private Double score;
     }
 }

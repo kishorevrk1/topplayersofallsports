@@ -257,7 +257,7 @@ public class PlayerController {
             .age(player.getAge())
             .photoUrl(player.getPhotoUrl())
             .isActive(player.getIsActive())
-            .consensusScore(analysis.map(a -> a.getAiRating() != null ? a.getAiRating().doubleValue() : null).orElse(player.getRankingScore()))
+            .score(analysis.map(a -> a.getAiRating() != null ? a.getAiRating().doubleValue() : null).orElse(player.getRankingScore()))
             .build();
     }
 
