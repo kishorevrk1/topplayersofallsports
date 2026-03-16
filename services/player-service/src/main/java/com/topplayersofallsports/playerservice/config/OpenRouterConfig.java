@@ -11,6 +11,8 @@ public class OpenRouterConfig {
     private String apiKey;
     private String baseUrl;
     private String model;
+    /** Secondary model for consensus cross-checking (e.g. openai/gpt-4o-mini) */
+    private String secondaryModel;
     private String siteUrl;
     private String siteName;
     private Integer timeoutSeconds;
