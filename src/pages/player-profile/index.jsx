@@ -61,10 +61,10 @@ function transformPlayer(raw) {
       year: h.date || '—',
     })),
     keyStats: [
-      { label: 'Rank', value: raw.currentRank ? `#${raw.currentRank}` : '—' },
-      { label: 'Rating', value: raw.aiRating ?? raw.rankingScore ?? '—' },
-      { label: 'Age', value: raw.age || '—' },
-    ],
+      { label: 'Rank',   value: raw.currentRank ? `#${raw.currentRank}` : null },
+      { label: 'Rating', value: raw.aiRating ?? raw.rankingScore ?? null },
+      raw.age ? { label: 'Age', value: raw.age } : null,
+    ].filter(Boolean),
     seasonStats: {},
     careerStats: {},
     news: [],
@@ -211,15 +211,15 @@ const PlayerProfile = () => {
                   <h3 className="font-semibold mb-4 text-text-primary">Quick Facts</h3>
                   <div className="space-y-3 text-sm">
                     {[
-                      { label: 'Sport',       value: player.sport },
-                      { label: 'Position',    value: player.position },
-                      { label: 'Nationality', value: player.nationality },
-                      { label: 'Age',         value: player.age ? `${player.age} years` : '—' },
-                      { label: 'Height',      value: player.height },
-                      { label: 'Weight',      value: player.weight },
-                      { label: 'All-Time Rank', value: player.currentRank ? `#${player.currentRank}` : '—' },
-                      { label: 'Status',      value: player.status },
-                    ].map(({ label, value }) => (
+                      { label: 'Sport',         value: player.sport },
+                      { label: 'Position',       value: player.position },
+                      { label: 'Nationality',    value: player.nationality },
+                      { label: 'Age',            value: player.age ? `${player.age} years` : null },
+                      { label: 'Height',         value: player.height },
+                      { label: 'Weight',         value: player.weight },
+                      { label: 'All-Time Rank',  value: player.currentRank ? `#${player.currentRank}` : null },
+                      { label: 'Status',         value: player.status },
+                    ].filter(({ value }) => value && value !== 'N/A' && value !== '—').map(({ label, value }) => (
                       <div key={label} className="flex justify-between">
                         <span className="text-text-secondary">{label}</span>
                         <span className="font-medium text-text-primary">{value}</span>

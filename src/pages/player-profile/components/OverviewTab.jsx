@@ -1,74 +1,66 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Icon from '../../../components/AppIcon';
-import playerApiService from '../../../services/playerApiService';
-import RatingBreakdownCard from '../../../components/RatingBreakdownCard';
-import RatingHistoryChart from '../../../components/RatingHistoryChart';
 
 const OverviewTab = ({ player }) => {
-  const [ratingBreakdown, setRatingBreakdown] = useState(null);
-  const [ratingHistory, setRatingHistory] = useState([]);
-  const [loadingRating, setLoadingRating] = useState(false);
-
-  // Fetch ACR rating breakdown and history from player-service
-  useEffect(() => {
-    const fetchRatingData = async () => {
-      if (!player?.id) return;
-      setLoadingRating(true);
-      try {
-        const [breakdown, history] = await Promise.allSettled([
-          playerApiService.getRatingBreakdown(player.id),
-          playerApiService.getRatingHistory(player.id),
-        ]);
-        if (breakdown.status === 'fulfilled') {
-          setRatingBreakdown(breakdown.value);
-        } else {
-          console.error('Rating breakdown fetch failed:', breakdown.reason);
-        }
-        if (history.status === 'fulfilled') {
-          setRatingHistory(history.value?.history || []);
-        } else {
-          console.error('Rating history fetch failed:', history.reason);
-        }
-      } catch (error) {
-        console.error('Error fetching rating data:', error);
-      } finally {
-        setLoadingRating(false);
-      }
-    };
-
-    fetchRatingData();
-  }, [player?.id]);
+  const rating = player.aiRating ?? player.rankingScore;
 
   return (
     <div className="space-y-6">
-      {/* ACR Rating Breakdown */}
-      <div className="bg-card border border-border rounded-lg p-6">
-        <div className="flex items-center space-x-2 mb-4">
-          <Icon name="BarChart2" size={20} className="text-accent" />
-          <h3 className="text-lg font-semibold text-text-primary">ACR Rating Breakdown</h3>
-          <span className="bg-blue-500/10 text-blue-400 text-xs font-medium px-2 py-1 rounded-full border border-blue-500/20">
-            2 AI Models · Transparent
-          </span>
-        </div>
-        <RatingBreakdownCard breakdown={ratingBreakdown} loading={loadingRating} />
-
-        {ratingHistory.length > 0 && (
-          <div className="mt-4">
-            <h4 className="text-sm text-text-secondary mb-2">Rating History</h4>
-            <RatingHistoryChart history={ratingHistory} />
+      {/* All-Time Rating */}
+      {rating != null && (
+        <div className="bg-card border border-border rounded-lg p-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <Icon name="Star" size={20} className="text-accent" />
+            <h3 className="text-lg font-semibold text-text-primary">All-Time Rating</h3>
+            <span className="bg-accent/10 text-accent text-xs font-medium px-2 py-1 rounded-full">
+              AI-powered
+            </span>
           </div>
-        )}
-      </div>
 
-      {/* AI-Generated Bio */}
+          <div className="flex items-center gap-6">
+            <div className="text-5xl font-bold text-accent">{Math.round(rating)}</div>
+            <div className="flex-1">
+              <div className="h-2.5 rounded-full bg-muted overflow-hidden mb-2">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-accent to-accent/70 transition-all duration-700"
+                  style={{ width: `${Math.min(rating, 100)}%` }}
+                />
+              </div>
+              <p className="text-sm text-text-secondary leading-relaxed">
+                Scored on peak performance, longevity, awards, and era-adjusted impact.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Strengths */}
+      {player.strengths?.length > 0 && (
+        <div className="bg-card border border-border rounded-lg p-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <Icon name="Zap" size={20} className="text-accent" />
+            <h3 className="text-lg font-semibold">Key Strengths</h3>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {player.strengths.map((strength, index) => (
+              <span
+                key={index}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/10 text-accent text-sm font-medium border border-accent/20"
+              >
+                <Icon name="CheckCircle" size={14} />
+                {strength}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Biography */}
       {player.biography && (
         <div className="bg-card border border-border rounded-lg p-6">
           <div className="flex items-center space-x-2 mb-4">
             <Icon name="User" size={20} className="text-accent" />
-            <h3 className="text-lg font-semibold">Player Biography</h3>
-            <span className="bg-accent/10 text-accent text-xs font-medium px-2 py-1 rounded-full">
-              AI Generated
-            </span>
+            <h3 className="text-lg font-semibold">Biography</h3>
           </div>
           <p className="text-text-secondary leading-relaxed">
             {player.biography}
@@ -86,7 +78,6 @@ const OverviewTab = ({ player }) => {
 
           <div className="space-y-3">
             {player.careerHighlights.map((highlight, index) => {
-              // Handle both string highlights (from backend) and object highlights (legacy mock)
               const isString = typeof highlight === 'string';
               const title       = isString ? highlight : (highlight.title || highlight);
               const description = isString ? '' : (highlight.description || '');
@@ -128,35 +119,27 @@ const OverviewTab = ({ player }) => {
         </div>
       )}
 
-      {/* Personal Information */}
+      {/* Personal Information + Achievements */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-card border border-border rounded-lg p-6">
           <div className="flex items-center space-x-2 mb-4">
             <Icon name="Info" size={20} className="text-accent" />
             <h3 className="text-lg font-semibold">Personal Information</h3>
           </div>
-          
+
           <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-text-secondary">Full Name</span>
-              <span className="font-medium">{player.fullName}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-text-secondary">Date of Birth</span>
-              <span className="font-medium">{player.dateOfBirth}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-text-secondary">Birthplace</span>
-              <span className="font-medium">{player.birthplace}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-text-secondary">Nationality</span>
-              <span className="font-medium">{player.nationality}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-text-secondary">College</span>
-              <span className="font-medium">{player.college}</span>
-            </div>
+            {[
+              { label: 'Full Name',    value: player.fullName },
+              { label: 'Date of Birth', value: player.dateOfBirth },
+              { label: 'Birthplace',   value: player.birthplace },
+              { label: 'Nationality',  value: player.nationality },
+              { label: 'College',      value: player.college },
+            ].filter(({ value }) => value && value !== '—' && value !== 'N/A').map(({ label, value }) => (
+              <div key={label} className="flex justify-between">
+                <span className="text-text-secondary">{label}</span>
+                <span className="font-medium">{value}</span>
+              </div>
+            ))}
           </div>
         </div>
 
