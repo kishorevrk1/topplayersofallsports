@@ -5,7 +5,6 @@ import com.topplayersofallsports.playerservice.entity.Player;
 import com.topplayersofallsports.playerservice.entity.Sport;
 import com.topplayersofallsports.playerservice.repository.AIAnalysisRepository;
 import com.topplayersofallsports.playerservice.repository.PlayerRepository;
-import com.topplayersofallsports.playerservice.repository.RatingConsensusRepository;
 import com.topplayersofallsports.playerservice.service.JwtService;
 import com.topplayersofallsports.playerservice.service.PlayerService;
 import com.topplayersofallsports.playerservice.service.PlayerRegistrationService;
@@ -45,9 +44,6 @@ class PlayerControllerTest {
 
     @MockBean
     private AIAnalysisRepository aiAnalysisRepository;
-
-    @MockBean
-    private RatingConsensusRepository ratingConsensusRepository;
 
     @MockBean
     private JwtService jwtService;

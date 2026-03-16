@@ -19,6 +19,12 @@ spring:
       idle-timeout: 600000
       max-lifetime: 1800000
   
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 1
+    locations: classpath:db/migration
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -57,8 +63,8 @@ spring:
 openrouter:
   api-key: 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
   base-url: https://openrouter.ai/api/v1
-  model: anthropic/claude-3-5-haiku-20241022    # Claude Haiku via BYOK — routes to Anthropic directly, no Venice
-  secondary-model: anthropic/claude-3-haiku-20240307
+  model: meta-llama/llama-3.3-70b-instruct:free    # Llama 3.3 70B — free tier, strong JSON generation
+  secondary-model: mistralai/mistral-small-3.1-24b-instruct:free
   site-url: https://topplayersofallsports.com
   site-name: TopPlayersOfAllSports
   timeout-seconds: 120
@@ -167,13 +173,13 @@ ranking:
 # ── Google OAuth2 ──────────────────────────────────────────
 google:
   oauth2:
-    client-id: ${GOOGLE_CLIENT_ID}
-    client-secret: ${GOOGLE_CLIENT_SECRET}
+    client-id: ${GOOGLE_CLIENT_ID:260337926756-2ns89nhhhmkfbe32ccl2neh0k3detgsd.apps.googleusercontent.com}
+    client-secret: ${GOOGLE_CLIENT_SECRET:topplayersofallsports}
     token-url: https://oauth2.googleapis.com/token
     user-info-url: https://www.googleapis.com/oauth2/v1/userinfo
 
 # ── JWT ────────────────────────────────────────────────────
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET:topplayersofallsports-dev-secret-key-change-in-production}
   access-token-expiry-ms: 900000
   refresh-token-expiry-ms: 604800000
