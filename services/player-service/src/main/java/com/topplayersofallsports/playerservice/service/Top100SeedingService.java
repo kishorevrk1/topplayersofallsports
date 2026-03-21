@@ -275,6 +275,7 @@ public class Top100SeedingService {
         player.setCurrentRank(info.getRank());
         player.setPreviousRank(info.getRank());
         player.setRankingScore(info.getRating() != null ? info.getRating().doubleValue() : 0.0);
+        player.setEloScore(info.getRank() != null ? 1800.0 - ((info.getRank() - 1) * 6.06) : 1500.0);
         player.setLastRankingUpdate(LocalDateTime.now());
         
         // Set birth date if birth year is provided
