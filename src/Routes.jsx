@@ -17,6 +17,7 @@ import EditProfile from "pages/profile/edit";
 import Settings from "pages/settings";
 import PlayerComparisonPage from "pages/player-comparison";
 import NotFound from "pages/NotFound";
+import ProtectedRoute from "components/auth/ProtectedRoute";
 
 const Routes = () => {
   return (
@@ -36,9 +37,9 @@ const Routes = () => {
         <Route path="/video-highlights-hub" element={<VideoHighlightsHub />} />
         <Route path="/search-results" element={<SearchResults />} />
         <Route path="/sports-calendar" element={<SportsCalendarPage />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/profile/edit" element={<EditProfile />} />
-        <Route path="/settings" element={<Settings />} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/compare" element={<PlayerComparisonPage />} />
         <Route path="*" element={<NotFound />} />
       </RouterRoutes>
