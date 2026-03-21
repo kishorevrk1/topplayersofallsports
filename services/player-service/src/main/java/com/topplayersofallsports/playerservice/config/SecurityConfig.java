@@ -62,6 +62,11 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/players/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/search/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/actuator/health").permitAll()
+                // Rating Day public endpoints
+                .requestMatchers(HttpMethod.GET, "/api/rating-day/current/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/rating-day/*/results").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/rating-day/*/history").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/nominations/*/current").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
