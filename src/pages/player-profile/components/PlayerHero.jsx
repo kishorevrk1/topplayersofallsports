@@ -95,6 +95,12 @@ const PlayerHero = ({ player, onFollow, isFollowing }) => {
                     <div className="text-white/80 text-sm">Weight</div>
                   </div>
                 )}
+                {player.eloScore && (
+                  <div className="text-center lg:text-left">
+                    <div className="text-2xl font-bold">{Math.round(player.eloScore)}</div>
+                    <div className="text-white/80 text-sm">ELO Rating</div>
+                  </div>
+                )}
               </div>
 
               {/* Key Stats */}

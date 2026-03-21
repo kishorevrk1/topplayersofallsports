@@ -48,6 +48,7 @@ function transformPlayer(raw) {
     dateOfBirth: raw.birthdate || '—',
     birthplace: raw.birthplace || '—',
     nationality: raw.nationality || '—',
+    eloScore: raw.eloScore || null,
     college: '—',
     currentRank: raw.currentRank,
     rankingScore: raw.rankingScore,
