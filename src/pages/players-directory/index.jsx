@@ -81,6 +81,7 @@ const PlayersDirectory = () => {
       switch (sortBy) {
         case 'name':   av = (a.displayName || a.name || '').toLowerCase(); bv = (b.displayName || b.name || '').toLowerCase(); break;
         case 'rating': av = a.aiRating ?? a.rating ?? 0; bv = b.aiRating ?? b.rating ?? 0; break;
+        case 'elo':    av = a.eloScore ?? 0; bv = b.eloScore ?? 0; break;
         case 'age':    av = a.age ?? 0; bv = b.age ?? 0; break;
         default:       av = a.rank ?? 999; bv = b.rank ?? 999; break;
       }
@@ -184,6 +185,7 @@ const PlayersDirectory = () => {
                 options={[
                   { value: 'rank',   label: 'By Rank' },
                   { value: 'rating', label: 'By Rating' },
+                  { value: 'elo',    label: 'By ELO' },
                   { value: 'name',   label: 'By Name' },
                   { value: 'age',    label: 'By Age' },
                 ]}
@@ -294,18 +296,26 @@ const PlayersDirectory = () => {
                       </div>
                     </div>
 
-                    {/* Rating bar */}
-                    <div>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-text-secondary">Rating</span>
-                        <span className={`font-bold tabular-nums ${getRatingColor(rating)}`}>{rating}</span>
+                    {/* Rating + ELO */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-text-secondary">Rating</span>
+                          <span className={`font-bold tabular-nums ${getRatingColor(rating)}`}>{rating}</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden w-24">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-700"
+                            style={{ width: `${Math.min(rating, 100)}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-700"
-                          style={{ width: `${Math.min(rating, 100)}%` }}
-                        />
-                      </div>
+                      {player.eloScore != null && (
+                        <div className="bg-muted px-2.5 py-1 rounded-lg text-center">
+                          <div className="text-[10px] text-text-secondary leading-none">ELO</div>
+                          <div className="text-sm font-bold text-accent tabular-nums">{player.eloScore}</div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Bio snippet */}
@@ -327,7 +337,7 @@ const PlayersDirectory = () => {
                 <table className="w-full text-sm">
                   <thead className="bg-muted border-b border-border">
                     <tr>
-                      {['Rank', 'Player', 'Position', 'Nationality', 'Age', 'Rating', 'Status'].map(h => (
+                      {['Rank', 'Player', 'Position', 'Nationality', 'Age', 'Rating', 'ELO', 'Status'].map(h => (
                         <th key={h} className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider whitespace-nowrap">
                           {h}
                         </th>
@@ -362,6 +372,9 @@ const PlayersDirectory = () => {
                                 <div className="h-full rounded-full bg-blue-400" style={{ width: `${Math.min(rating, 100)}%` }} />
                               </div>
                             </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="font-bold tabular-nums text-sm text-accent">{player.eloScore ?? '—'}</span>
                           </td>
                           <td className="px-4 py-3">
                             {player.isActive
