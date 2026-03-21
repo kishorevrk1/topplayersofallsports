@@ -3,7 +3,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
-import Input from '../../components/ui/Input';
 import userProfileService from '../../services/userProfileService';
 
 const SettingsPage = () => {
@@ -16,7 +15,6 @@ const SettingsPage = () => {
 
   // Account Settings
   const [accountSettings, setAccountSettings] = useState({
-    twoFactorEnabled: false,
     loginAlerts: true,
     profileVisibility: 'public'
   });
@@ -41,13 +39,6 @@ const SettingsPage = () => {
     allowMessaging: true,
     dataSharing: false,
     analytics: true
-  });
-
-  // Password Change
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
   });
 
   useEffect(() => {
@@ -78,32 +69,6 @@ const SettingsPage = () => {
       setMessage({ type: 'error', text: 'Failed to load settings' });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handlePasswordChange = async (e) => {
-    e.preventDefault();
-    
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setMessage({ type: 'error', text: 'New passwords do not match' });
-      return;
-    }
-
-    if (passwordForm.newPassword.length < 8) {
-      setMessage({ type: 'error', text: 'Password must be at least 8 characters' });
-      return;
-    }
-
-    try {
-      setIsSaving(true);
-      await userProfileService.changePassword(passwordForm.currentPassword, passwordForm.newPassword);
-      
-      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      setMessage({ type: 'success', text: 'Password updated successfully' });
-    } catch (error) {
-      setMessage({ type: 'error', text: error.message || 'Failed to update password' });
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -381,58 +346,45 @@ const SettingsPage = () => {
                 {/* Security Tab */}
                 {activeTab === 'security' && (
                   <div className="space-y-6">
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900 mb-4">Security Settings</h3>
-                      
-                      {/* Change Password */}
-                      <form onSubmit={handlePasswordChange} className="space-y-4">
-                        <Input
-                          label="Current Password"
-                          type="password"
-                          value={passwordForm.currentPassword}
-                          onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
-                          required
-                        />
-                        
-                        <Input
-                          label="New Password"
-                          type="password"
-                          value={passwordForm.newPassword}
-                          onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
-                          required
-                          minLength={8}
-                        />
-                        
-                        <Input
-                          label="Confirm New Password"
-                          type="password"
-                          value={passwordForm.confirmPassword}
-                          onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                          required
-                          minLength={8}
-                        />
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">Security Settings</h3>
 
-                        <Button
-                          type="submit"
-                          disabled={isSaving}
-                          className="flex items-center space-x-2"
-                        >
-                          <Icon name="Lock" size={16} />
-                          <span>Change Password</span>
-                        </Button>
-                      </form>
+                    <div className="flex items-start space-x-4 p-4 border border-gray-200 rounded-lg">
+                      <div className="flex-shrink-0 w-10 h-10 bg-red-50 rounded-full flex items-center justify-center">
+                        <Icon name="Chrome" size={20} className="text-red-500" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">Connected via Google</p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Your account is secured by Google Sign-In. Manage your Google account
+                          security at{' '}
+                          <a
+                            href="https://myaccount.google.com/security"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline"
+                          >
+                            myaccount.google.com
+                          </a>
+                          .
+                        </p>
+                      </div>
+                    </div>
 
-                      {/* Two Factor Authentication */}
-                      <div className="mt-8 pt-6 border-t border-gray-200">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="font-medium text-gray-900">Two-Factor Authentication</h4>
-                            <p className="text-sm text-gray-600">Add an extra layer of security to your account</p>
-                          </div>
-                          <Button variant="outline">
-                            {accountSettings.twoFactorEnabled ? 'Disable' : 'Enable'} 2FA
-                          </Button>
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium text-gray-900">Two-Factor Authentication</h4>
+                          <p className="text-sm text-gray-600">
+                            2FA is managed through your Google account.
+                          </p>
                         </div>
+                        <a
+                          href="https://myaccount.google.com/two-step-verification"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Button variant="outline" type="button">Manage via Google</Button>
+                        </a>
                       </div>
                     </div>
                   </div>
