@@ -8,6 +8,7 @@ import com.topplayersofallsports.playerservice.service.PlayerDisplayNameService;
 import com.topplayersofallsports.playerservice.service.PlayerImageEnrichmentService;
 import com.topplayersofallsports.playerservice.service.PlayerRankingService;
 import com.topplayersofallsports.playerservice.service.PlayerService;
+import com.topplayersofallsports.playerservice.service.RatingDayService;
 import com.topplayersofallsports.playerservice.service.Top100SeedingService;
 import com.topplayersofallsports.playerservice.temporal.workflow.AllSportsRankingWorkflow;
 import com.topplayersofallsports.playerservice.temporal.workflow.PlayerEnrichmentWorkflow;
@@ -40,6 +41,7 @@ public class AdminController {
     private final Top100SeedingService top100SeedingService;
     private final PlayerRepository playerRepository;
     private final PlayerImageEnrichmentService imageEnrichmentService;
+    private final RatingDayService ratingDayService;
 
     @Autowired(required = false)
     private WorkflowClient workflowClient;
@@ -50,7 +52,8 @@ public class AdminController {
                           DataCleanupService dataCleanupService,
                           Top100SeedingService top100SeedingService,
                           PlayerRepository playerRepository,
-                          PlayerImageEnrichmentService imageEnrichmentService) {
+                          PlayerImageEnrichmentService imageEnrichmentService,
+                          RatingDayService ratingDayService) {
         this.playerService = playerService;
         this.displayNameService = displayNameService;
         this.rankingService = rankingService;
@@ -58,6 +61,7 @@ public class AdminController {
         this.top100SeedingService = top100SeedingService;
         this.playerRepository = playerRepository;
         this.imageEnrichmentService = imageEnrichmentService;
+        this.ratingDayService = ratingDayService;
     }
     
     @PostMapping("/sync/football")
@@ -585,6 +589,30 @@ public class AdminController {
             ));
         } catch (Exception e) {
             log.error("Error starting image enrichment for {}: {}", sport, e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(Map.of(
+                "success", false,
+                "error", e.getMessage()
+            ));
+        }
+    }
+
+    // ==================== RATING DAY TRIGGER ====================
+
+    @PostMapping("/rating-day/trigger")
+    @Operation(summary = "Manually trigger Rating Day for all sports",
+               description = "Opens a 48h voting window for all 5 active sports")
+    public ResponseEntity<Map<String, Object>> triggerRatingDay() {
+        log.info("Admin request to manually trigger Rating Day for all sports");
+        try {
+            var created = ratingDayService.openRatingDays();
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Rating Days opened",
+                "count", created.size(),
+                "sports", created.stream().map(rd -> rd.getSport().name()).toList()
+            ));
+        } catch (Exception e) {
+            log.error("Error triggering Rating Day: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().body(Map.of(
                 "success", false,
                 "error", e.getMessage()
