@@ -4,7 +4,10 @@ import com.topplayersofallsports.playerservice.temporal.activity.BatchRegistrati
 import com.topplayersofallsports.playerservice.temporal.activity.PlayerEnrichmentActivitiesImpl;
 import com.topplayersofallsports.playerservice.temporal.activity.PlayerRankingActivitiesImpl;
 import com.topplayersofallsports.playerservice.temporal.activity.PlayerRegistrationActivitiesImpl;
+import com.topplayersofallsports.playerservice.temporal.activity.RatingDayActivitiesImpl;
 import com.topplayersofallsports.playerservice.temporal.workflow.BatchPlayerRegistrationWorkflowImpl;
+import com.topplayersofallsports.playerservice.temporal.workflow.MonthlyRatingDayWorkflowImpl;
+import com.topplayersofallsports.playerservice.temporal.workflow.NominationEvaluationWorkflowImpl;
 import com.topplayersofallsports.playerservice.temporal.workflow.PlayerEnrichmentWorkflowImpl;
 import com.topplayersofallsports.playerservice.temporal.workflow.PlayerRankingWorkflowImpl;
 import com.topplayersofallsports.playerservice.temporal.workflow.PlayerRegistrationWorkflowImpl;
@@ -54,6 +57,7 @@ public class TemporalConfig implements SmartLifecycle {
     private final BatchRegistrationActivitiesImpl batchActivities;
     private final PlayerRankingActivitiesImpl rankingActivities;
     private final PlayerEnrichmentActivitiesImpl enrichmentActivities;
+    private final RatingDayActivitiesImpl ratingDayActivities;
 
     private volatile boolean running = false;
     private WorkerFactory workerFactory; // set by configuredWorkerFactory() @Bean
@@ -91,14 +95,17 @@ public class TemporalConfig implements SmartLifecycle {
                 PlayerRegistrationWorkflowImpl.class,
                 BatchPlayerRegistrationWorkflowImpl.class,
                 PlayerRankingWorkflowImpl.class,
-                PlayerEnrichmentWorkflowImpl.class
+                PlayerEnrichmentWorkflowImpl.class,
+                MonthlyRatingDayWorkflowImpl.class,
+                NominationEvaluationWorkflowImpl.class
         );
 
         worker.registerActivitiesImplementations(
                 registrationActivities,
                 batchActivities,
                 rankingActivities,
-                enrichmentActivities
+                enrichmentActivities,
+                ratingDayActivities
         );
 
         this.workerFactory = factory;
