@@ -163,6 +163,7 @@ public class PlayerController {
                 p.put("weight", player.getWeight());
                 p.put("photoUrl", player.getPhotoUrl());
                 p.put("isActive", player.getIsActive() != null && player.getIsActive());
+                p.put("eloScore", player.getEloScore() != null ? Math.round(player.getEloScore()) : 1500);
                 p.put("rating", player.getRankingScore() != null ? player.getRankingScore().intValue() : 0);
                 
                 // Add AI analysis if available
