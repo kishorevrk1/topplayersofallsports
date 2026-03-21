@@ -90,7 +90,11 @@ public class Player {
     
     @Column(name = "ranking_score")
     private Double rankingScore; // AI-calculated score (0-100)
-    
+
+    @Column(name = "elo_score")
+    @Builder.Default
+    private Double eloScore = 1500.0;
+
     @Column(name = "last_ranking_update")
     private LocalDateTime lastRankingUpdate; // When ranking was last updated
     
