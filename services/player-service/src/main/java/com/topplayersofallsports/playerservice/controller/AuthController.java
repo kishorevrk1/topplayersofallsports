@@ -3,13 +3,14 @@ package com.topplayersofallsports.playerservice.controller;
 import com.topplayersofallsports.playerservice.dto.AuthResponse;
 import com.topplayersofallsports.playerservice.dto.GoogleCallbackRequest;
 import com.topplayersofallsports.playerservice.entity.User;
+import com.topplayersofallsports.playerservice.exception.AuthException;
 import com.topplayersofallsports.playerservice.repository.UserRepository;
 import com.topplayersofallsports.playerservice.service.AuthService;
-import com.topplayersofallsports.playerservice.service.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -21,7 +22,6 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
-    private final JwtService jwtService;
     private final UserRepository userRepository;
 
     @PostMapping("/google")
@@ -51,17 +51,13 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<Map<String, Object>> me(@RequestHeader("Authorization") String authHeader) {
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+    public ResponseEntity<Map<String, Object>> me(@AuthenticationPrincipal String userId) {
+        if (userId == null) {
             return ResponseEntity.status(401).build();
         }
-        String token = authHeader.substring(7);
-        if (!jwtService.isValid(token)) {
-            return ResponseEntity.status(401).build();
-        }
-        String userId = jwtService.getUserId(token);
+
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new AuthException("User not found"));
 
         return ResponseEntity.ok(Map.of(
                 "id", user.getId(),

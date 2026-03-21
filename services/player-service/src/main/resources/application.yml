@@ -173,8 +173,8 @@ ranking:
 # ── Google OAuth2 ──────────────────────────────────────────
 google:
   oauth2:
-    client-id: ${GOOGLE_CLIENT_ID:260337926756-2ns89nhhhmkfbe32ccl2neh0k3detgsd.apps.googleusercontent.com}
-    client-secret: ${GOOGLE_CLIENT_SECRET:topplayersofallsports}
+    client-id: ${GOOGLE_CLIENT_ID:GOOGLE_CLIENT_ID_REMOVED}
+    client-secret: ${GOOGLE_CLIENT_SECRET}
     token-url: https://oauth2.googleapis.com/token
     user-info-url: https://www.googleapis.com/oauth2/v1/userinfo
 
@@ -183,3 +183,7 @@ jwt:
   secret: ${JWT_SECRET:topplayersofallsports-dev-secret-key-change-in-production}
   access-token-expiry-ms: 900000
   refresh-token-expiry-ms: 604800000
+
+# ── CORS ──────────────────────────────────────────────────
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000}
