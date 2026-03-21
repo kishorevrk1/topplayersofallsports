@@ -59,7 +59,10 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
     
     @Query("SELECT p FROM Player p WHERE p.sport = :sport AND p.currentRank IS NOT NULL ORDER BY p.currentRank ASC")
     List<Player> findAllRankedPlayersBySport(Sport sport);
-    
+
+    @Query("SELECT p FROM Player p WHERE p.sport = :sport AND p.currentRank IS NOT NULL ORDER BY p.eloScore DESC")
+    List<Player> findTop100BySportOrderByEloDesc(@Param("sport") Sport sport);
+
     @Query("SELECT p FROM Player p WHERE p.sport = :sport AND p.currentRank = :rank")
     Optional<Player> findByRankAndSport(Integer rank, Sport sport);
 
