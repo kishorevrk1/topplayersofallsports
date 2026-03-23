@@ -15,7 +15,7 @@ const Header = () => {
   const navigationItems = [
     { label: 'Home', path: '/home-dashboard', icon: 'Home' },
     { label: 'Players', path: '/players', icon: 'Users' },
-    { label: 'Calendar', path: '/sports-calendar', icon: 'Calendar' },
+    { label: 'Rating Day', path: '/rating-day', icon: 'Swords' },
     { label: 'Videos', path: '/video-highlights-hub', icon: 'Play' },
     { label: 'News', path: '/breaking-news-feed', icon: 'Newspaper' },
   ];

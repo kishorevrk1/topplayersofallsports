@@ -8,7 +8,22 @@ const StatsTab = ({ player }) => {
 
   const seasons = ['2024', '2023', '2022', '2021', '2020'];
 
-  const currentStats = viewMode === 'career' ? player.careerStats : player.seasonStats[selectedSeason];
+  const currentStats = viewMode === 'career' ? player.careerStats : (player.seasonStats || {})[selectedSeason];
+  const hasStats = currentStats && Object.keys(currentStats).length > 0;
+  const availableSeasons = Object.keys(player.seasonStats || {}).sort((a, b) => b - a);
+  const displaySeasons = availableSeasons.length > 0 ? availableSeasons : seasons;
+
+  if (!hasStats && !Object.keys(player.careerStats || {}).length) {
+    return (
+      <div className="bg-card border border-border rounded-xl p-12 text-center">
+        <Icon name="BarChart3" size={48} className="mx-auto text-gray-300 mb-4" />
+        <h3 className="text-lg font-semibold text-text-primary mb-2">Stats Coming Soon</h3>
+        <p className="text-text-secondary text-sm">
+          Detailed statistics for {player.name} will be available once season data is imported.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -39,7 +54,7 @@ const StatsTab = ({ player }) => {
               onChange={(e) => setSelectedSeason(e.target.value)}
               className="bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
             >
-              {seasons.map((season) => (
+              {displaySeasons.map((season) => (
                 <option key={season} value={season}>
                   {season} Season
                 </option>
@@ -49,8 +64,18 @@ const StatsTab = ({ player }) => {
         )}
       </div>
 
+      {/* No stats for selected view */}
+      {!hasStats && (
+        <div className="bg-muted rounded-xl p-8 text-center">
+          <Icon name="Info" size={24} className="mx-auto text-text-secondary mb-2" />
+          <p className="text-text-secondary text-sm">
+            {viewMode === 'career' ? 'Career stats not available yet.' : `No stats available for the ${selectedSeason} season.`}
+          </p>
+        </div>
+      )}
+
       {/* Stats Cards - Mobile */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:hidden gap-4">
+      {hasStats && <div className="grid grid-cols-2 sm:grid-cols-3 lg:hidden gap-4">
         {Object.entries(currentStats).map(([key, value]) => (
           <div key={key} className="bg-card border border-border rounded-lg p-4 text-center">
             <div className="text-2xl font-bold text-accent mb-1">{value}</div>
@@ -59,10 +84,10 @@ const StatsTab = ({ player }) => {
             </div>
           </div>
         ))}
-      </div>
+      </div>}
 
       {/* Stats Table - Desktop */}
-      <div className="hidden lg:block bg-card border border-border rounded-lg overflow-hidden">
+      {hasStats && <div className="hidden lg:block bg-card border border-border rounded-lg overflow-hidden">
         <div className="px-6 py-4 border-b border-border">
           <h3 className="text-lg font-semibold flex items-center space-x-2">
             <Icon name="BarChart3" size={20} className="text-accent" />
@@ -96,7 +121,7 @@ const StatsTab = ({ player }) => {
             </tbody>
           </table>
         </div>
-      </div>
+      </div>}
 
       {/* Performance Chart Placeholder */}
       <div className="bg-card border border-border rounded-lg p-6">

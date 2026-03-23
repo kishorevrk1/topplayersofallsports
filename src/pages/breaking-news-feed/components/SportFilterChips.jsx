@@ -3,7 +3,7 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import { useNewsStats } from '../../../hooks/useNews';
 
-const SportFilterChips = ({ selectedSport, onSportChange }) => {
+const SportFilterChips = ({ selectedSport, onSportChange, breakingOnly = false, onBreakingToggle, recentOnly = false, onRecentToggle }) => {
   const [showAll, setShowAll] = useState(false);
   const { stats, loading } = useNewsStats();
 
@@ -120,28 +120,22 @@ const SportFilterChips = ({ selectedSport, onSportChange }) => {
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
           <div className="flex items-center space-x-3">
             <Button
-              variant="ghost"
+              variant={recentOnly ? "default" : "ghost"}
               size="sm"
-              className="text-xs h-6 px-2 text-text-secondary hover:text-text-primary"
+              onClick={onRecentToggle}
+              className={`text-xs h-6 px-2 ${recentOnly ? '' : 'text-text-secondary hover:text-text-primary'}`}
             >
               <Icon name="Clock" size={12} className="mr-1" />
-              Last 24h
+              Most Recent
             </Button>
             <Button
-              variant="ghost"
+              variant={breakingOnly ? "default" : "ghost"}
               size="sm"
-              className="text-xs h-6 px-2 text-text-secondary hover:text-text-primary"
+              onClick={onBreakingToggle}
+              className={`text-xs h-6 px-2 ${breakingOnly ? '' : 'text-text-secondary hover:text-text-primary'}`}
             >
               <Icon name="Zap" size={12} className="mr-1" />
               Breaking Only
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs h-6 px-2 text-text-secondary hover:text-text-primary"
-            >
-              <Icon name="Radio" size={12} className="mr-1" />
-              Live Updates
             </Button>
           </div>
           

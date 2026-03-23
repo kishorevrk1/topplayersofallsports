@@ -15,6 +15,8 @@ const BreakingNewsFeed = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedSport, setSelectedSport] = useState(searchParams.get('sport') || 'all');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const [breakingOnly, setBreakingOnly] = useState(false);
+  const [recentOnly, setRecentOnly] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [newArticlesCount, setNewArticlesCount] = useState(0);
 
@@ -30,6 +32,8 @@ const BreakingNewsFeed = () => {
   } = useNews({
     sport: selectedSport,
     searchQuery: searchQuery,
+    breakingOnly,
+    recentOnly,
     pageSize: 20
   });
 
@@ -64,6 +68,20 @@ const BreakingNewsFeed = () => {
   const handleSportChange = (sport) => {
     setSelectedSport(sport);
     updateFilters({ sport });
+  };
+
+  const handleBreakingToggle = () => {
+    const next = !breakingOnly;
+    setBreakingOnly(next);
+    if (next) setRecentOnly(false);
+    updateFilters({ breakingOnly: next, recentOnly: false });
+  };
+
+  const handleRecentToggle = () => {
+    const next = !recentOnly;
+    setRecentOnly(next);
+    if (next) setBreakingOnly(false);
+    updateFilters({ recentOnly: next, breakingOnly: false });
   };
 
   const loadMore = () => {
@@ -112,9 +130,13 @@ const BreakingNewsFeed = () => {
         </div>
 
         {/* Sport Filter Chips */}
-        <SportFilterChips 
+        <SportFilterChips
           selectedSport={selectedSport}
           onSportChange={handleSportChange}
+          breakingOnly={breakingOnly}
+          onBreakingToggle={handleBreakingToggle}
+          recentOnly={recentOnly}
+          onRecentToggle={handleRecentToggle}
         />
 
         {/* Refresh Indicator */}

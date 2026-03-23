@@ -14,6 +14,8 @@ export const useNews = (initialFilters = {}) => {
   const [filters, setFilters] = useState({
     sport: 'all',
     searchQuery: '',
+    breakingOnly: false,
+    recentOnly: false,
     pageSize: 20,
     ...initialFilters
   });
@@ -30,7 +32,12 @@ export const useNews = (initialFilters = {}) => {
       const backendSport = newsService.mapSportToBackend(filters.sport);
 
       // Determine which API to call based on filters
-      if (filters.searchQuery) {
+      if (filters.breakingOnly) {
+        response = await newsService.getBreakingNews(backendSport, pageNum, filters.pageSize);
+      } else if (filters.recentOnly) {
+        // Use trending endpoint which sorts by views/recency
+        response = await newsService.getTrendingNews(backendSport, pageNum, filters.pageSize);
+      } else if (filters.searchQuery) {
         response = await newsService.searchNews(
           filters.searchQuery,
           backendSport,
@@ -97,7 +104,7 @@ export const useNews = (initialFilters = {}) => {
    */
   useEffect(() => {
     fetchNews(0, false);
-  }, [filters.sport, filters.searchQuery]);
+  }, [filters.sport, filters.searchQuery, filters.breakingOnly, filters.recentOnly]);
 
   return {
     articles,
