@@ -23,7 +23,6 @@ import java.util.Map;
 @RequestMapping("/api/news")
 @RequiredArgsConstructor
 @Tag(name = "News", description = "Sports News API")
-@CrossOrigin(origins = "*")
 public class NewsController {
     
     private final NewsService newsService;

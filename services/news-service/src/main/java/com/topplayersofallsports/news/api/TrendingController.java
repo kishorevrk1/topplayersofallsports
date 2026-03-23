@@ -22,7 +22,6 @@ import java.util.List;
 @RequestMapping("/api/news/trending")
 @RequiredArgsConstructor
 @Tag(name = "Trending", description = "Trending topics and players API")
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
 public class TrendingController {
     
     private final TrendingService trendingService;
