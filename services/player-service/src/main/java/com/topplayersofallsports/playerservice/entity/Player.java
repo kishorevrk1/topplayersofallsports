@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -93,6 +94,7 @@ public class Player {
 
     @Column(name = "elo_score")
     @Builder.Default
+    @JsonProperty("eloScore")
     private Double eloScore = 1500.0;
 
     @Column(name = "last_ranking_update")

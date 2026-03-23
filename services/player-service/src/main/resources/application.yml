@@ -63,7 +63,7 @@ spring:
 openrouter:
   api-key: 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
   base-url: https://openrouter.ai/api/v1
-  model: meta-llama/llama-3.3-70b-instruct:free    # Llama 3.3 70B — free tier, strong JSON generation
+  model: qwen/qwen3-coder:free    # Qwen3 Coder — free tier, strong JSON generation
   secondary-model: mistralai/mistral-small-3.1-24b-instruct:free
   site-url: https://topplayersofallsports.com
   site-name: TopPlayersOfAllSports
@@ -174,7 +174,7 @@ ranking:
 google:
   oauth2:
     client-id: ${GOOGLE_CLIENT_ID:882439388803-8qdpntj38midjvlmcprku4b82lp125j3.apps.googleusercontent.com}
-    client-secret: ${GOOGLE_CLIENT_SECRET}
+    client-secret: ${GOOGLE_CLIENT_SECRET:placeholder-secret}
     token-url: https://oauth2.googleapis.com/token
     user-info-url: https://www.googleapis.com/oauth2/v1/userinfo
 

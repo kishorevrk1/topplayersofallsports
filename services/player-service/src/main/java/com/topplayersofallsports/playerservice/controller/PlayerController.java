@@ -86,6 +86,7 @@ public class PlayerController {
         response.put("currentRank", player.getCurrentRank());
         response.put("isActive", player.getIsActive());
         response.put("rankingScore", player.getRankingScore());
+        response.put("eloScore", player.getEloScore());
 
         if (analysisOpt.isPresent()) {
             AIAnalysis analysis = analysisOpt.get();
