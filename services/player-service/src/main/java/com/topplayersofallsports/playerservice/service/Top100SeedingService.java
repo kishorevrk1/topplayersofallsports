@@ -17,8 +17,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Service to seed the database with Top 100 All-Time Greatest Players for each sport.
@@ -58,10 +63,24 @@ public class Top100SeedingService {
         playerRepository.findBySport(sport)
                 .forEach(p -> alreadySavedNames.add(normalizeName(p.getName())));
 
+        // Determine which ranks already exist so we can skip full batches
+        Set<Integer> existingRanks = playerRepository.findBySport(sport).stream()
+                .filter(p -> p.getCurrentRank() != null)
+                .map(Player::getCurrentRank)
+                .collect(Collectors.toSet());
+
         // Process in batches of 10 to avoid token limits and rate limits
         for (int batch = 0; batch < 10; batch++) {
             int startRank = batch * BATCH_SIZE + 1;
             int endRank = startRank + BATCH_SIZE - 1;
+
+            // Skip batch if all ranks in this range already exist
+            boolean allFilled = IntStream.rangeClosed(startRank, endRank)
+                    .allMatch(existingRanks::contains);
+            if (allFilled) {
+                log.info("⏭️ Skipping batch {} (ranks {}-{}) — all filled", batch + 1, startRank, endRank);
+                continue;
+            }
 
             log.info("📋 Processing batch {} (ranks {}-{}) for {}", batch + 1, startRank, endRank, sport);
 
@@ -105,34 +124,200 @@ public class Top100SeedingService {
             }
         }
 
+        // Gap-fill: find missing ranks and fill them with targeted requests
+        totalSeeded += fillMissingRanks(sport, alreadySavedNames);
+
         log.info("🎉 Completed seeding for {}. Total players: {}", sport, totalSeeded);
         return totalSeeded;
     }
 
     /**
-     * Fuzzy duplicate detection: returns true if newNorm is a substring of any saved name
-     * or any saved name is a substring of newNorm AND they share the same last name token.
-     * This catches "zinedine zidane" vs "zinedine yazid zidane".
+     * Fill missing rank slots by detecting gaps and requesting specific replacements.
+     * Uses a targeted prompt asking AI for unique players to fill exact rank numbers.
      */
-    private boolean isFuzzyDuplicate(String newNorm, List<String> savedNames) {
-        String[] newTokens = newNorm.split("\\s+");
-        String newLastToken = newTokens[newTokens.length - 1];
-        for (String saved : savedNames) {
-            String[] savedTokens = saved.split("\\s+");
-            String savedLastToken = savedTokens[savedTokens.length - 1];
-            // Same last name AND at least one other token in common → duplicate
-            if (newLastToken.equals(savedLastToken) && newTokens.length > 1) {
-                for (String nt : newTokens) {
-                    for (String st : savedTokens) {
-                        if (!nt.equals(newLastToken) && nt.equals(st)) {
-                            return true; // Shared non-last-name token + same last name
+    private int fillMissingRanks(Sport sport, List<String> alreadySavedNames) {
+        Set<Integer> existingRanks = playerRepository.findBySport(sport).stream()
+                .filter(p -> p.getCurrentRank() != null)
+                .map(Player::getCurrentRank)
+                .collect(Collectors.toSet());
+
+        List<Integer> missingRanks = IntStream.rangeClosed(1, 100)
+                .filter(r -> !existingRanks.contains(r))
+                .boxed()
+                .collect(Collectors.toList());
+
+        if (missingRanks.isEmpty()) {
+            log.info("✅ No missing ranks for {} — all 100 filled!", sport);
+            return 0;
+        }
+
+        log.info("🔧 Gap-filling {} missing ranks for {}: {}", missingRanks.size(), sport, missingRanks);
+        int filled = 0;
+
+        // Process missing ranks in small batches
+        for (int i = 0; i < missingRanks.size(); i += BATCH_SIZE) {
+            List<Integer> batch = missingRanks.subList(i, Math.min(i + BATCH_SIZE, missingRanks.size()));
+            try {
+                String prompt = buildGapFillPrompt(getSportDisplayName(sport), batch, alreadySavedNames);
+                String response = openRouterClient.chat(prompt, 0.7);
+                List<Top100PlayerInfo> players = parsePlayersResponse(response, sport);
+
+                for (Top100PlayerInfo playerInfo : players) {
+                    try {
+                        String newNorm = normalizeName(playerInfo.getName());
+                        if (isFuzzyDuplicate(newNorm, alreadySavedNames)) {
+                            log.info("⚠️ Gap-fill: skipping duplicate '{}'", playerInfo.getName());
+                            continue;
                         }
+
+                        // Ensure rank is one of the missing ones
+                        if (!batch.contains(playerInfo.getRank())) {
+                            // Reassign to first available missing rank in this batch
+                            Integer availableRank = batch.stream()
+                                    .filter(r -> !existingRanks.contains(r))
+                                    .findFirst().orElse(null);
+                            if (availableRank == null) continue;
+                            playerInfo.setRank(availableRank);
+                        }
+
+                        String displayName = playerInfo.getDisplayName() != null
+                                ? playerInfo.getDisplayName() : playerInfo.getName();
+                        String photoUrl = imageEnrichmentService.findPhotoUrl(
+                                displayName, playerInfo.getName(), sport.name().toLowerCase());
+
+                        savePlayer(playerInfo, sport, photoUrl);
+                        alreadySavedNames.add(newNorm);
+                        existingRanks.add(playerInfo.getRank());
+                        filled++;
+                        log.info("✅ Gap-filled rank #{}: {} ({})", playerInfo.getRank(), playerInfo.getName(), sport);
+                    } catch (Exception e) {
+                        log.error("❌ Gap-fill failed for {}: {}", playerInfo.getName(), e.getMessage());
                     }
                 }
+
+                if (i + BATCH_SIZE < missingRanks.size()) {
+                    TimeUnit.SECONDS.sleep(BATCH_DELAY_SECONDS);
+                }
+            } catch (Exception e) {
+                log.error("❌ Gap-fill batch failed for {}: {}", sport, e.getMessage());
             }
-            // One is a subsequence of the other → duplicate
-            if (saved.contains(newNorm) || newNorm.contains(saved)) {
+        }
+
+        log.info("🔧 Gap-filling complete for {}. Filled {} of {} missing ranks", sport, filled, missingRanks.size());
+        return filled;
+    }
+
+    /**
+     * Build a targeted prompt for filling specific missing rank slots.
+     */
+    private String buildGapFillPrompt(String sportName, List<Integer> missingRanks, List<String> alreadySavedNames) {
+        String ranksStr = missingRanks.stream().map(String::valueOf).collect(Collectors.joining(", "));
+
+        return "You are a world-class sports historian. I need you to fill SPECIFIC missing rank slots " +
+                "in our Top 100 All-Time Greatest " + sportName + " Players list (up to 2025).\n\n" +
+                "MISSING RANKS TO FILL: " + ranksStr + "\n\n" +
+                "DO NOT include any of these already-listed players:\n" +
+                String.join(", ", alreadySavedNames) + "\n\n" +
+                "You MUST provide DIFFERENT players than those listed above. Think of legendary " + sportName +
+                " players who deserve a Top 100 spot but aren't in the exclusion list.\n\n" +
+                "For each player, provide a JSON object with these EXACT fields:\n" +
+                "- rank: integer (use EXACTLY one of these values: " + ranksStr + ")\n" +
+                "- name: string (common fan-known name)\n" +
+                "- displayName: string (same as name)\n" +
+                "- nationality: string\n" +
+                "- position: string\n" +
+                "- team: string (most iconic team)\n" +
+                "- birthYear: integer\n" +
+                "- height: string\n" +
+                "- weight: string\n" +
+                "- isActive: boolean\n" +
+                "- rating: integer (0-100)\n" +
+                "- biography: string (5-8 sentences — vivid, passionate narrative about their career, " +
+                "defining moments, rivalries, records, and why fans worship them)\n" +
+                "- careerHighlights: array of strings (5-7 specific achievements with years and stats)\n" +
+                "- strengths: array of strings (4-6 descriptive phrases, not single words)\n" +
+                "- legacySummary: string (one impactful sentence)\n\n" +
+                "Return ONLY a valid JSON array. No markdown. Exactly " + missingRanks.size() + " players.\n" +
+                "JSON response:";
+    }
+
+    /**
+     * Seed a single player (rank 1) for testing purposes.
+     * Verifies the full pipeline: AI generation → Wikipedia photo → DB save with ELO.
+     */
+    public Map<String, Object> seedSinglePlayerTest(Sport sport) {
+        log.info("🧪 Test: Seeding single player (rank #1) for {}", sport);
+        List<String> alreadySavedNames = new ArrayList<>();
+        List<Top100PlayerInfo> players = generatePlayersBatch(sport, 1, 1, alreadySavedNames);
+
+        if (players.isEmpty()) {
+            return Map.of("success", false, "error", "AI returned no players");
+        }
+
+        Top100PlayerInfo info = players.get(0);
+        String displayName = info.getDisplayName() != null ? info.getDisplayName() : info.getName();
+        String photoUrl = imageEnrichmentService.findPhotoUrl(displayName, info.getName(), sport.name().toLowerCase());
+
+        // Don't save to DB — just return what WOULD be saved
+        double eloScore = info.getRank() != null ? 1800.0 - ((info.getRank() - 1) * 6.06) : 1500.0;
+
+        Map<String, Object> result = new java.util.LinkedHashMap<>();
+        result.put("success", true);
+        result.put("name", info.getName());
+        result.put("displayName", info.getDisplayName());
+        result.put("rank", info.getRank());
+        result.put("eloScore", eloScore);
+        result.put("team", info.getTeam());
+        result.put("position", info.getPosition());
+        result.put("nationality", info.getNationality());
+        result.put("photoUrl", photoUrl);
+        result.put("hasPhoto", photoUrl != null && !photoUrl.contains("ui-avatars.com"));
+        result.put("rating", info.getRating());
+        result.put("biography", info.getBiography());
+        result.put("isActive", info.getIsActive());
+        result.put("birthYear", info.getBirthYear());
+        result.put("height", info.getHeight());
+        result.put("weight", info.getWeight());
+        result.put("strengths", info.getStrengths());
+        result.put("careerHighlights", info.getCareerHighlights());
+        return result;
+    }
+
+    /**
+     * Fuzzy duplicate detection: catches genuine duplicates like
+     * "zinedine zidane" vs "zinedine yazid zidane" without false-positiving on
+     * "roberto carlos" vs "carlos tevez" or "ronaldo" vs "ronaldinho".
+     */
+    private boolean isFuzzyDuplicate(String newNorm, List<String> savedNames) {
+        for (String saved : savedNames) {
+            // Exact match
+            if (newNorm.equals(saved)) {
                 return true;
+            }
+            // One name is a subset of the other AND they share the same last token.
+            // This catches "zidane" vs "zinedine zidane" and
+            // "zinedine zidane" vs "zinedine yazid zidane",
+            // but NOT "ronaldo" vs "ronaldinho" (different last tokens).
+            String[] newTokens = newNorm.split("\\s+");
+            String[] savedTokens = saved.split("\\s+");
+            String newLast = newTokens[newTokens.length - 1];
+            String savedLast = savedTokens[savedTokens.length - 1];
+
+            if (newLast.equals(savedLast)) {
+                // Same surname — check if ALL tokens of the shorter name appear in the longer
+                String[] shorter = newTokens.length <= savedTokens.length ? newTokens : savedTokens;
+                String[] longer = newTokens.length > savedTokens.length ? newTokens : savedTokens;
+                Set<String> longerSet = new HashSet<>(java.util.Arrays.asList(longer));
+                boolean allMatch = true;
+                for (String t : shorter) {
+                    if (!longerSet.contains(t)) {
+                        allMatch = false;
+                        break;
+                    }
+                }
+                if (allMatch) {
+                    return true;
+                }
             }
         }
         return false;
@@ -177,9 +362,12 @@ public class Top100SeedingService {
             "- weight: string (e.g., \"185 lbs\" or \"84 kg\")\n" +
             "- isActive: boolean (still actively playing as of 2025?)\n" +
             "- rating: integer (0-100, your assessment of their all-time greatness)\n" +
-            "- biography: string (2-3 sentence career summary)\n" +
-            "- careerHighlights: array of strings (3-5 major achievements)\n" +
-            "- strengths: array of strings (3 key skills/attributes)\n" +
+            "- biography: string (5-8 sentences — write a vivid, passionate narrative about the player's career, " +
+            "their defining moments, what made them transcend the sport, their swagger, their rivalries, " +
+            "the records they shattered, and why fans worship them. Make the reader FEEL the greatness.)\n" +
+            "- careerHighlights: array of strings (5-7 major achievements, be specific with years and stats)\n" +
+            "- strengths: array of strings (4-6 detailed strengths — not just one word like 'Dribbling', " +
+            "but descriptive phrases like 'Mesmerizing close-control dribbling that leaves defenders rooted to the spot')\n" +
             "- legacySummary: string (one impactful sentence about their legacy)\n" +
             "\nIMPORTANT:\n" +
             "- Return ONLY a valid JSON array of player objects\n" +

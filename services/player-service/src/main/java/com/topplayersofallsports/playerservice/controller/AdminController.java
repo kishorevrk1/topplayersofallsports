@@ -390,6 +390,24 @@ public class AdminController {
         }
     }
     
+    // ==================== TEST SINGLE PLAYER SEED ====================
+
+    @GetMapping("/top100/test-seed/{sport}")
+    @Operation(summary = "Test seed a single player (rank #1) without saving to DB",
+               description = "Verifies AI + Wikipedia photo + ELO calculation pipeline. Does NOT save to DB.")
+    public ResponseEntity<Map<String, Object>> testSeedSinglePlayer(@PathVariable String sport) {
+        try {
+            Sport sportEnum = Sport.valueOf(sport.toUpperCase());
+            Map<String, Object> result = top100SeedingService.seedSinglePlayerTest(sportEnum);
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "error", "Invalid sport"));
+        } catch (Exception e) {
+            log.error("Test seed failed: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(Map.of("success", false, "error", e.getMessage()));
+        }
+    }
+
     // ==================== TOP 100 ALL-TIME GREATEST SEEDING ====================
     
     @PostMapping("/top100/seed/{sport}")
@@ -400,33 +418,30 @@ public class AdminController {
         
         try {
             Sport sportEnum = Sport.valueOf(sport.toUpperCase());
-            
-            // Check if already seeded
-            if (top100SeedingService.isSportSeeded(sportEnum)) {
-                return ResponseEntity.ok(Map.of(
-                    "success", false,
-                    "sport", sport,
-                    "message", "Sport already has Top 100 data seeded",
-                    "hint", "Use /api/admin/players/top100/reseed/" + sport + " to reseed (will delete existing data)"
-                ));
-            }
-            
-            // Start async seeding
+
+            long existingCount = playerRepository.countBySportAndCurrentRankIsNotNull(sportEnum);
+            boolean isPartial = existingCount > 0 && existingCount < 100;
+            String action = existingCount == 0 ? "Full seeding" :
+                    isPartial ? "Filling missing players (" + existingCount + "/100 exist)" :
+                    "Re-running (100 already exist, dedup will skip)";
+
+            // Start async seeding (dedup logic in service handles existing players)
             CompletableFuture.runAsync(() -> {
                 try {
                     int count = top100SeedingService.seedTop100ForSport(sportEnum);
-                    log.info("✅ Completed Top 100 seeding for {}. Total: {} players", sport, count);
+                    log.info("✅ Completed Top 100 seeding for {}. New players added: {}", sport, count);
                 } catch (Exception e) {
                     log.error("❌ Failed to seed Top 100 for {}: {}", sport, e.getMessage(), e);
                 }
             });
-            
+
             return ResponseEntity.accepted().body(Map.of(
                 "success", true,
                 "sport", sport,
+                "existingPlayers", existingCount,
+                "action", action,
                 "message", "Top 100 seeding started for " + sport.toUpperCase(),
-                "description", "Generating Top 100 All-Time Greatest " + sport.toUpperCase() + " Players up to 2025",
-                "estimatedTime", "5-10 minutes (processing in batches of 10)",
+                "estimatedTime", isPartial ? "1-3 minutes (filling gaps)" : "5-10 minutes (full seed)",
                 "checkEndpoint", "/api/admin/players/top100/stats",
                 "viewEndpoint", "/api/admin/players/top100/" + sport.toLowerCase()
             ));
