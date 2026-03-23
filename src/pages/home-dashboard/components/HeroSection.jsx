@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import Image from '../../../components/AppImage';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
-import realSportsDataService from '../../../services/realSportsDataService';
+import newsService from '../../../services/newsService';
 
 const HeroSection = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -65,71 +65,33 @@ const HeroSection = () => {
     }
   ];
 
-  // Load real sports news on component mount
+  // Load real sports news from our backend news-service
   useEffect(() => {
     const loadRealNewsData = async () => {
       setLoading(true);
       try {
-        console.log('[HeroSection] Loading real trending news...');
-        
-        const realNews = await realSportsDataService.getTrendingNews();
-        
-        // Transform real news to hero story format
-        const transformedStories = realNews.slice(0, 5).map((article, index) => ({
+        const response = await newsService.getAllNews(0, 5);
+        const articles = response?.content || [];
+
+        const transformedStories = articles.map((article, index) => ({
           id: article.id || index + 1,
           title: article.title || 'Breaking Sports News',
-          summary: article.description || 'Latest updates from the world of sports.',
-          image: article.images?.[0]?.url || fallbackHeroStories[index % fallbackHeroStories.length].image,
-          mobileImage: article.images?.[0]?.url || fallbackHeroStories[index % fallbackHeroStories.length].mobileImage,
-          category: article.category || 'Sports',
+          summary: article.description || article.content?.substring(0, 200) || '',
+          image: article.imageUrl || fallbackHeroStories[index % fallbackHeroStories.length].image,
+          mobileImage: article.imageUrl || fallbackHeroStories[index % fallbackHeroStories.length].mobileImage,
+          category: article.sport || 'Sports',
           timestamp: new Date(article.publishedAt || Date.now()),
-          author: article.author || article.source || 'Sports Network',
+          author: article.author || article.sourceName || 'Sports Network',
           readTime: '3 min read',
-          views: `${(Math.random() * 2 + 0.5).toFixed(1)}M`,
-          isBreaking: index < 2, // Mark first 2 as breaking
+          views: `${article.viewCount || 0}`,
+          isBreaking: article.isBreaking || false,
           url: article.url
         }));
-        
-        // Fallback stories if no real data
-        const fallbackStories = [
-          {
-            id: 1,
-            title: "Live Sports Data Now Available",
-            summary: "Real-time sports data is now being fetched from multiple free APIs including NBA, ESPN, MLB, and more. Get the latest scores, player stats, and breaking news.",
-            image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200&h=600&fit=crop&crop=center",
-            mobileImage: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&h=500&fit=crop&crop=center",
-            category: "System",
-            timestamp: new Date(),
-            author: "Top Players of All Sports",
-            readTime: "2 min read",
-            views: "1.2M",
-            isBreaking: true
-          }
-        ];
-        
-        const stories = transformedStories.length > 0 ? transformedStories : fallbackStories;
-        setHeroStories(stories);
-        
-        console.log(`[HeroSection] ✅ Loaded ${stories.length} hero stories`);
-        
+
+        setHeroStories(transformedStories.length > 0 ? transformedStories : fallbackHeroStories);
       } catch (error) {
-        console.error('[HeroSection] Failed to load real news:', error);
-        // Use minimal fallback
-        setHeroStories([
-          {
-            id: 1,
-            title: "Welcome to Top Players of All Sports",
-            summary: "Stay updated with the latest sports news, player statistics, and live scores from around the world.",
-            image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200&h=600&fit=crop&crop=center",
-            mobileImage: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&h=500&fit=crop&crop=center",
-            category: "Welcome",
-            timestamp: new Date(),
-            author: "Sports Team",
-            readTime: "1 min read",
-            views: "1.0M",
-            isBreaking: false
-          }
-        ]);
+        console.error('[HeroSection] Failed to load news:', error);
+        setHeroStories(fallbackHeroStories);
       } finally {
         setLoading(false);
       }

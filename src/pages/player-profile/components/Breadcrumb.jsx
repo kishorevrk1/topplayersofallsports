@@ -6,7 +6,7 @@ const Breadcrumb = ({ player }) => {
   const breadcrumbItems = [
     { label: 'Home', path: '/home-dashboard' },
     { label: player.sport, path: `/sport/${player.sport.toLowerCase()}` },
-    { label: player.team.name, path: `/team/${player.team.id}` },
+    { label: player.nationality, path: null },
     { label: player.name, path: null, current: true },
   ];
 
@@ -24,13 +24,17 @@ const Breadcrumb = ({ player }) => {
                 <span className="font-medium text-text-primary truncate max-w-[200px]">
                   {item.label}
                 </span>
-              ) : (
+              ) : item.path ? (
                 <Link
                   to={item.path}
                   className="text-text-secondary hover:text-text-primary transition-colors duration-150 truncate max-w-[150px]"
                 >
                   {item.label}
                 </Link>
+              ) : (
+                <span className="text-text-secondary truncate max-w-[150px]">
+                  {item.label}
+                </span>
               )}
             </li>
           ))}
