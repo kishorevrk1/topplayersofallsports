@@ -9,78 +9,94 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Service for trending topics and players
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class TrendingService {
-    
+
     private final TrendingRepository trendingRepository;
-    
-    /**
-     * Get trending topics in the last N hours
-     */
+
     @Transactional(readOnly = true)
     public List<TrendingTopicDTO> getTrendingTopics(Sport sport, int hours, int limit) {
-        Instant since = Instant.now().minusSeconds(hours * 3600L);
         String sportStr = sport != null ? sport.name() : null;
-        
-        log.debug("Finding trending topics for sport: {}, hours: {}, limit: {}", sport, hours, limit);
-        
+        Instant since = Instant.now().minusSeconds(hours * 3600L);
+
         List<Object[]> results = trendingRepository.findTrendingTopics(since, sportStr, limit);
-        List<TrendingTopicDTO> trending = new ArrayList<>();
-        
-        for (Object[] row : results) {
-            TrendingTopicDTO dto = TrendingTopicDTO.builder()
-                .tag((String) row[0])
-                .mentionCount(((BigInteger) row[1]).longValue())
-                .totalViews(((BigDecimal) row[2]).longValue())
-                .trendingScore(((BigDecimal) row[3]).doubleValue())
-                .sport((String) row[4])
-                .build();
-            trending.add(dto);
+        if (results.isEmpty()) {
+            results = trendingRepository.findTrendingTopics(Instant.EPOCH, sportStr, limit);
         }
-        
-        log.info("Found {} trending topics", trending.size());
+
+        List<TrendingTopicDTO> trending = new ArrayList<>();
+        for (Object[] row : results) {
+            try {
+                trending.add(TrendingTopicDTO.builder()
+                    .tag(str(row[0]))
+                    .mentionCount(toLong(row[1]))
+                    .totalViews(toLong(row[2]))
+                    .trendingScore(toDouble(row[3]))
+                    .sport(str(row[4]))
+                    .build());
+            } catch (Exception e) {
+                log.warn("Failed to parse trending topic row: {}", e.getMessage());
+            }
+        }
         return trending;
     }
-    
-    /**
-     * Get trending players in the last N hours
-     */
+
     @Transactional(readOnly = true)
     public List<TrendingPlayerDTO> getTrendingPlayers(Sport sport, int hours, int limit) {
-        Instant since = Instant.now().minusSeconds(hours * 3600L);
         String sportStr = sport != null ? sport.name() : null;
-        
-        log.debug("Finding trending players for sport: {}, hours: {}, limit: {}", sport, hours, limit);
-        
+        Instant since = Instant.now().minusSeconds(hours * 3600L);
+
         List<Object[]> results = trendingRepository.findTrendingPlayers(since, sportStr, limit);
-        List<TrendingPlayerDTO> trending = new ArrayList<>();
-        
-        for (Object[]row : results) {
-            TrendingPlayerDTO dto = TrendingPlayerDTO.builder()
-                .playerName((String) row[0])
-                .sport((String) row[1])
-                .articleCount(((BigInteger) row[2]).longValue())
-                .totalViews(((BigDecimal) row[3]).longValue())
-                .trendingScore(((BigDecimal) row[4]).doubleValue())
-                .lastMentioned(((Timestamp) row[5]).toInstant())
-                .recentHeadline((String) row[6])
-                .build();
-            trending.add(dto);
+        if (results.isEmpty()) {
+            results = trendingRepository.findTrendingPlayers(Instant.EPOCH, sportStr, limit);
         }
-        
-        log.info("Found {} trending players", trending.size());
+
+        List<TrendingPlayerDTO> trending = new ArrayList<>();
+        for (Object[] row : results) {
+            try {
+                trending.add(TrendingPlayerDTO.builder()
+                    .playerName(str(row[0]))
+                    .sport(str(row[1]))
+                    .articleCount(toLong(row[2]))
+                    .totalViews(toLong(row[3]))
+                    .trendingScore(toDouble(row[4]))
+                    .lastMentioned(toInstant(row[5]))
+                    .recentHeadline(str(row[6]))
+                    .build());
+            } catch (Exception e) {
+                log.warn("Failed to parse trending player row: {}", e.getMessage());
+            }
+        }
         return trending;
+    }
+
+    private static String str(Object o) {
+        return o != null ? o.toString() : null;
+    }
+
+    private static long toLong(Object o) {
+        if (o == null) return 0L;
+        if (o instanceof Number n) return n.longValue();
+        return Long.parseLong(o.toString());
+    }
+
+    private static double toDouble(Object o) {
+        if (o == null) return 0.0;
+        if (o instanceof Number n) return n.doubleValue();
+        return Double.parseDouble(o.toString());
+    }
+
+    private static Instant toInstant(Object o) {
+        if (o == null) return Instant.now();
+        if (o instanceof java.sql.Timestamp ts) return ts.toInstant();
+        if (o instanceof java.time.OffsetDateTime odt) return odt.toInstant();
+        if (o instanceof Instant i) return i;
+        return Instant.now();
     }
 }

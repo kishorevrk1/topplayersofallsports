@@ -146,21 +146,25 @@ public class NewsService {
     // @Cacheable(value = "trending-news", key = "'all-' + #page + '-' + #size")
     @Transactional(readOnly = true)
     public Page<NewsArticle> getTrendingNews(int page, int size) {
-        Instant since = Instant.now().minusSeconds(24 * 3600); // Last 24 hours
         Pageable pageable = PageRequest.of(page, size);
-        return newsRepository.findTrending(since, pageable);
+        Instant since = Instant.now().minusSeconds(24 * 3600);
+        Page<NewsArticle> result = newsRepository.findTrending(since, pageable);
+        // Fallback: if no recent articles, show all-time most viewed
+        if (result.isEmpty()) {
+            result = newsRepository.findTrending(Instant.EPOCH, pageable);
+        }
+        return result;
     }
-    
-    /**
-     * Get trending news by sport
-     * Caching disabled due to lazy loading issues
-     */
-    // @Cacheable(value = "trending-news", key = "#sport + '-' + #page + '-' + #size")
+
     @Transactional(readOnly = true)
     public Page<NewsArticle> getTrendingNewsBySport(Sport sport, int page, int size) {
-        Instant since = Instant.now().minusSeconds(24 * 3600);
         Pageable pageable = PageRequest.of(page, size);
-        return newsRepository.findTrendingBySport(sport, since, pageable);
+        Instant since = Instant.now().minusSeconds(24 * 3600);
+        Page<NewsArticle> result = newsRepository.findTrendingBySport(sport, since, pageable);
+        if (result.isEmpty()) {
+            result = newsRepository.findTrendingBySport(sport, Instant.EPOCH, pageable);
+        }
+        return result;
     }
     
     /**
