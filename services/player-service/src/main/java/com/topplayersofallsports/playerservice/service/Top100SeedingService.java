@@ -158,7 +158,7 @@ public class Top100SeedingService {
         for (int i = 0; i < missingRanks.size(); i += BATCH_SIZE) {
             List<Integer> batch = missingRanks.subList(i, Math.min(i + BATCH_SIZE, missingRanks.size()));
             try {
-                String prompt = buildGapFillPrompt(getSportDisplayName(sport), batch, alreadySavedNames);
+                String prompt = buildGapFillPrompt(getSportDisplayName(sport), batch, alreadySavedNames, sport);
                 String response = openRouterClient.chat(prompt, 0.7);
                 List<Top100PlayerInfo> players = parsePlayersResponse(response, sport);
 
@@ -210,7 +210,7 @@ public class Top100SeedingService {
     /**
      * Build a targeted prompt for filling specific missing rank slots.
      */
-    private String buildGapFillPrompt(String sportName, List<Integer> missingRanks, List<String> alreadySavedNames) {
+    private String buildGapFillPrompt(String sportName, List<Integer> missingRanks, List<String> alreadySavedNames, Sport sport) {
         String ranksStr = missingRanks.stream().map(String::valueOf).collect(Collectors.joining(", "));
 
         return "You are a world-class sports historian. I need you to fill SPECIFIC missing rank slots " +
@@ -220,6 +220,7 @@ public class Top100SeedingService {
                 String.join(", ", alreadySavedNames) + "\n\n" +
                 "You MUST provide DIFFERENT players than those listed above. Think of legendary " + sportName +
                 " players who deserve a Top 100 spot but aren't in the exclusion list.\n\n" +
+                getSportSpecificPromptContext(sport) + "\n" +
                 "For each player, provide a JSON object with these EXACT fields:\n" +
                 "- rank: integer (use EXACTLY one of these values: " + ranksStr + ")\n" +
                 "- name: string (common fan-known name)\n" +
@@ -329,7 +330,7 @@ public class Top100SeedingService {
     private List<Top100PlayerInfo> generatePlayersBatch(Sport sport, int startRank, int endRank,
                                                          List<String> alreadySavedNames) {
         String sportName = getSportDisplayName(sport);
-        String prompt = buildBatchPrompt(sportName, startRank, endRank, alreadySavedNames);
+        String prompt = buildBatchPrompt(sportName, startRank, endRank, alreadySavedNames, sport);
         log.debug("Sending AI request for {} ranks {}-{}", sport, startRank, endRank);
         String response = openRouterClient.chat(prompt, 0.7);
         return parsePlayersResponse(response, sport);
@@ -339,7 +340,7 @@ public class Top100SeedingService {
      * Build the AI prompt for generating a batch of players, excluding already-generated ones.
      */
     private String buildBatchPrompt(String sportName, int startRank, int endRank,
-                                     List<String> alreadySavedNames) {
+                                     List<String> alreadySavedNames, Sport sport) {
         String exclusionBlock = alreadySavedNames.isEmpty() ? "" :
             "\nDO NOT include any of these already-listed players (they appear in earlier ranks):\n" +
             String.join(", ", alreadySavedNames) + "\n";
@@ -350,6 +351,7 @@ public class Top100SeedingService {
             exclusionBlock +
             "\nThis is for \"Top 100 All-Time Greatest Players\" up to and including 2025.\n" +
             "Consider their entire career achievements, impact, longevity, championships, individual awards, and legacy.\n" +
+            getSportSpecificPromptContext(sport) +
             "\nFor each player, provide a JSON object with these EXACT fields:\n" +
             "- rank: integer (" + startRank + "-" + endRank + ")\n" +
             "- name: string (common name fans know them by, e.g. \"Lionel Messi\" not \"Lionel Andres Messi\")\n" +
@@ -556,6 +558,120 @@ public class Top100SeedingService {
         };
     }
     
+    /**
+     * Get sport-specific ranking criteria to inject into AI prompts.
+     * Tailored context ensures the AI uses the right awards, stats, and organizations
+     * for each sport — producing more accurate and richer player data.
+     */
+    private String getSportSpecificPromptContext(Sport sport) {
+        return switch (sport) {
+            case BASKETBALL -> """
+
+                RANKING CRITERIA FOR BASKETBALL:
+                Consider ALL eras of NBA history — from George Mikan and the 1950s through the modern era.
+                Include players from ABA who later starred in NBA (e.g., Julius Erving, Moses Malone).
+
+                Key factors to weigh:
+                - NBA Championships and Finals MVP awards
+                - Regular season MVP awards (weight heavily — this is the pinnacle individual award)
+                - Scoring titles, assist titles, rebounding titles
+                - All-NBA Team selections (1st, 2nd, 3rd team)
+                - All-Star Game selections and ASG MVPs
+                - All-Defensive Team selections
+                - Rookie of the Year awards
+                - Statistical dominance: career points, rebounds, assists, steals, blocks, PER, Win Shares, VORP
+                - Olympic gold medals and FIBA World Cup performances
+                - College basketball legacy (NCAA championships, tournament performances)
+                - Cultural impact and how they changed the game
+                - Longevity at elite level vs. peak dominance
+                - Era-adjusted impact (dominating in a weaker era vs. competing in a loaded era)
+
+                Position mapping: Point Guard, Shooting Guard, Small Forward, Power Forward, Center
+                Team: use most iconic NBA team (e.g., "Chicago Bulls" for Jordan, "Los Angeles Lakers" for Magic)
+                Height/weight: use feet/inches and lbs (e.g., 6'6", 216 lbs)
+                """;
+            case MMA -> """
+
+                RANKING CRITERIA FOR MMA:
+                Include fighters from ALL major organizations — UFC, Pride FC, Bellator, ONE Championship, Strikeforce, WEC, DREAM, Rizin, and early MMA (Pancrase, Vale Tudo).
+
+                Key factors to weigh:
+                - UFC/Pride/Bellator championship reigns and title defenses
+                - Pound-for-pound rankings across eras
+                - Finish rate (KO/TKO percentage, submission percentage)
+                - Quality of wins — victories over other ranked/legendary opponents
+                - Performance of the Night / Fight of the Night bonuses
+                - Dominance within weight class and cross-weight-class success
+                - Win streak length and significance
+                - Fighting style innovation and influence on the sport
+                - Longevity and ability to compete across eras
+                - Record in championship fights
+                - Ability to finish fights vs. decision wins
+                - Cultural impact on MMA's growth and mainstream acceptance
+
+                Position mapping: use primary weight class (e.g., "Lightweight", "Welterweight", "Heavyweight", "Women's Bantamweight")
+                Team: use most iconic gym/camp (e.g., "American Top Team", "Jackson-Wink MMA", "City Kickboxing", "Chute Boxe")
+                Height/weight: use feet/inches and lbs (e.g., 5'10", 155 lbs)
+                Include both male and female fighters — women's MMA pioneers and champions deserve their place.
+                """;
+            case CRICKET -> """
+
+                RANKING CRITERIA FOR CRICKET:
+                Consider ALL formats — Test, ODI, and T20I — but weight Test cricket most heavily as the gold standard of the sport.
+                Include players from ALL cricket-playing nations and ALL eras — from W.G. Grace and Don Bradman through the modern IPL era.
+
+                Key factors to weigh:
+                - Test match batting average, centuries, total runs
+                - Test match bowling average, wickets, five-wicket hauls, ten-wicket match hauls
+                - ODI batting and bowling records (runs, wickets, strike rates, averages)
+                - T20I impact and IPL/franchise cricket dominance
+                - ICC Cricket World Cup performances (ODI and T20)
+                - ICC Champions Trophy and World Test Championship
+                - All-rounder contributions (players who excelled at both batting and bowling)
+                - Wicket-keeping records (dismissals, stumpings, catches)
+                - Captaincy record and leadership impact
+                - Match-winning innings and series-defining performances
+                - Era-adjusted dominance (Bradman's 99.94 Test average in the 1930s-40s)
+                - Impact on cricket's evolution (e.g., one-day revolution, T20 innovation, fast bowling evolution)
+                - Records held: most runs, most wickets, most catches, fastest centuries, best averages
+
+                Position mapping: use primary role (e.g., "Opening Batsman", "Middle-Order Batsman", "Fast Bowler", "Spin Bowler", "All-Rounder", "Wicket-Keeper Batsman")
+                Team: use country name (e.g., "Australia", "India", "West Indies", "England", "Pakistan")
+                Height/weight: use feet/inches and lbs OR cm and kg — either format acceptable
+                Include players from all cricket nations — Australia, England, India, Pakistan, West Indies, South Africa, Sri Lanka, New Zealand, Bangladesh, Zimbabwe, Afghanistan, and others.
+                """;
+            case TENNIS -> """
+
+                RANKING CRITERIA FOR TENNIS:
+                Include players from ALL eras — pre-Open Era legends (Rod Laver, Pancho Gonzales, Bill Tilden) through the modern Big Three era and beyond.
+                Include both male and female players — this is an all-gender Top 100.
+
+                Key factors to weigh:
+                - Grand Slam singles titles (Australian Open, French Open, Wimbledon, US Open)
+                - Total weeks at World #1 ranking
+                - Year-end #1 finishes
+                - Grand Slam finals reached and win percentage
+                - Masters 1000 / Masters Series titles
+                - ATP Finals / WTA Finals titles and records
+                - Davis Cup / Billie Jean King Cup contributions and impact
+                - Olympic medals (singles, doubles)
+                - Career win-loss record and win percentage
+                - Head-to-head records against contemporaries
+                - Surface versatility (clay, grass, hard court dominance)
+                - Longest winning streaks and consecutive sets/matches won
+                - Longevity at the top level
+                - Era-adjusted dominance (competing in weak vs. strong eras)
+                - Cultural impact and popularity of the sport
+
+                Position mapping: use playing style (e.g., "Baseline Player", "Serve-and-Volley", "All-Court Player", "Counterpuncher", "Aggressive Baseliner")
+                Team: use country name (e.g., "Switzerland", "Spain", "United States", "Serbia")
+                Height/weight: use feet/inches and lbs (e.g., 6'1", 187 lbs)
+                Include both men AND women — Serena Williams, Steffi Graf, Martina Navratilova, Billie Jean King deserve spots alongside Federer, Nadal, Djokovic.
+                """;
+            default -> "";
+        };
+    }
+
     /**
      * Check if a sport has already been seeded
      */
