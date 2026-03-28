@@ -683,4 +683,120 @@ public class AdminController {
             ));
         }
     }
+
+    @PostMapping("/top100/seed-remaining")
+    @Operation(summary = "Seed Top 100 for Basketball, MMA, Cricket, Tennis (sequential)",
+               description = "Seeds all 4 remaining sports sequentially with delays between each. Estimated 30-40 minutes total.")
+    public ResponseEntity<Map<String, Object>> seedRemainingSports() {
+        log.info("🚀 Admin request to seed Top 100 for ALL remaining sports (Basketball → MMA → Cricket → Tennis)");
+
+        Sport[] sportsToSeed = { Sport.BASKETBALL, Sport.MMA, Sport.CRICKET, Sport.TENNIS };
+
+        CompletableFuture.runAsync(() -> {
+            for (int i = 0; i < sportsToSeed.length; i++) {
+                Sport sport = sportsToSeed[i];
+                try {
+                    log.info("🏁 [{}/{}] Starting Top 100 seeding for {}...", i + 1, sportsToSeed.length, sport);
+                    int count = top100SeedingService.seedTop100ForSport(sport);
+                    log.info("✅ [{}/{}] {} Top 100 complete! {} players seeded", i + 1, sportsToSeed.length, sport, count);
+
+                    // Delay between sports to avoid rate limiting
+                    if (i < sportsToSeed.length - 1) {
+                        log.info("⏳ Waiting 15s before next sport...");
+                        TimeUnit.SECONDS.sleep(15);
+                    }
+                } catch (Exception e) {
+                    log.error("❌ Failed to seed Top 100 for {}: {}", sport, e.getMessage(), e);
+                }
+            }
+            log.info("🎉 ALL REMAINING SPORTS SEEDED! Check /api/admin/players/top100/stats for results.");
+        });
+
+        return ResponseEntity.accepted().body(Map.of(
+            "success", true,
+            "message", "Top 100 seeding started for 4 remaining sports (sequential)",
+            "sports", new String[]{"BASKETBALL", "MMA", "CRICKET", "TENNIS"},
+            "order", "Basketball → MMA → Cricket → Tennis",
+            "estimatedTime", "30-40 minutes total",
+            "checkEndpoint", "/api/admin/players/top100/stats",
+            "viewEndpoints", Map.of(
+                "basketball", "/api/admin/players/top100/basketball",
+                "mma", "/api/admin/players/top100/mma",
+                "cricket", "/api/admin/players/top100/cricket",
+                "tennis", "/api/admin/players/top100/tennis"
+            )
+        ));
+    }
+
+    @GetMapping("/top100/export/{sport}")
+    @Operation(summary = "Export Top 100 as Flyway SQL migration",
+               description = "Returns SQL INSERT statements for all ranked players of a sport, ready to paste into a Flyway migration file.")
+    public ResponseEntity<String> exportTop100AsSql(@PathVariable String sport) {
+        log.info("📤 Admin request to export Top 100 SQL for: {}", sport);
+
+        try {
+            Sport sportEnum = Sport.valueOf(sport.toUpperCase());
+            List<Player> players = playerRepository.findTop100BySport(sportEnum);
+
+            if (players.isEmpty()) {
+                return ResponseEntity.ok("-- No ranked players found for " + sport.toUpperCase());
+            }
+
+            String sportLower = sport.toLowerCase();
+            String sportUpper = sport.toUpperCase();
+
+            StringBuilder sql = new StringBuilder();
+            sql.append("-- Seed all-time Top 100 ").append(sportUpper).append(" players\n");
+            sql.append("-- Idempotent: ON CONFLICT DO NOTHING skips any already-existing rows.\n");
+            sql.append("-- canonical_id format: ").append(sportLower).append("-alltime-{slug}\n");
+            sql.append("-- api_player_id format: ").append(sportLower).append("-top100-{rank}\n\n");
+            sql.append("INSERT INTO players (api_player_id, name, display_name, normalized_name, canonical_id, ");
+            sql.append("sport, team, position, height, weight, nationality, is_active, current_rank, ranking_score, ");
+            sql.append("created_at, updated_at)\nVALUES\n");
+
+            for (int i = 0; i < players.size(); i++) {
+                Player p = players.get(i);
+                int rank = p.getCurrentRank() != null ? p.getCurrentRank() : (i + 1);
+                String canonicalSlug = p.getNormalizedName() != null
+                        ? p.getNormalizedName().replaceAll("\\s+", "-")
+                        : p.getName().toLowerCase().replaceAll("[^a-z0-9]+", "-");
+
+                sql.append("  ('").append(sportLower).append("-top100-").append(rank).append("', ");
+                sql.append("'").append(escapeSql(p.getName())).append("', ");
+                sql.append("'").append(escapeSql(p.getDisplayName() != null ? p.getDisplayName() : p.getName())).append("', ");
+                sql.append("'").append(escapeSql(p.getNormalizedName() != null ? p.getNormalizedName() : p.getName().toLowerCase())).append("', ");
+                sql.append("'").append(sportLower).append("-alltime-").append(canonicalSlug).append("', ");
+                sql.append("'").append(sportUpper).append("', ");
+                sql.append("'").append(escapeSql(p.getTeam() != null ? p.getTeam() : "")).append("', ");
+                sql.append("'").append(escapeSql(p.getPosition() != null ? p.getPosition() : "")).append("', ");
+                sql.append("'").append(escapeSql(p.getHeight() != null ? p.getHeight() : "")).append("', ");
+                sql.append("'").append(escapeSql(p.getWeight() != null ? p.getWeight() : "")).append("', ");
+                sql.append("'").append(escapeSql(p.getNationality() != null ? p.getNationality() : "")).append("', ");
+                sql.append(p.getIsActive() != null ? p.getIsActive() : false).append(", ");
+                sql.append(rank).append(", ");
+                double score = p.getRankingScore() != null ? p.getRankingScore() : (100.0 - rank + 1);
+                sql.append(String.format("%.1f", score)).append(", ");
+                sql.append("NOW(), NOW())");
+
+                if (i < players.size() - 1) {
+                    sql.append(",");
+                }
+                sql.append("\n");
+            }
+
+            sql.append("ON CONFLICT (api_player_id) DO NOTHING;\n");
+
+            return ResponseEntity.ok()
+                    .header("Content-Type", "text/plain; charset=utf-8")
+                    .body(sql.toString());
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("-- Invalid sport: " + sport);
+        }
+    }
+
+    private String escapeSql(String value) {
+        if (value == null) return "";
+        return value.replace("'", "''");
+    }
 }
