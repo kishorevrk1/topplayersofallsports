@@ -61,14 +61,14 @@ spring:
 #                      model: gemini-2.0-flash  |  secondary-model: gemini-1.5-flash
 #                      (1,000,000 TPM free — virtually unlimited)
 openrouter:
-  api-key: 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
-  base-url: https://openrouter.ai/api/v1
-  model: qwen/qwen3-coder:free    # Qwen3 Coder — free tier, strong JSON generation
-  secondary-model: mistralai/mistral-small-3.1-24b-instruct:free
+  api-key: AIzaSyCpy-GW-uL1gEujI_4e2CH4SQg72P3TQUs
+  base-url: https://generativelanguage.googleapis.com/v1beta/openai
+  model: gemini-2.0-flash    # Gemini 2.0 Flash — 1M TPM free, virtually unlimited
+  secondary-model: gemini-1.5-flash
   site-url: https://topplayersofallsports.com
   site-name: TopPlayersOfAllSports
   timeout-seconds: 120
-  max-tokens: 4096
+  max-tokens: 8192
 
 # Anthropic Direct API (used by Top100SeedingService — no OpenRouter proxy)
 anthropic:
