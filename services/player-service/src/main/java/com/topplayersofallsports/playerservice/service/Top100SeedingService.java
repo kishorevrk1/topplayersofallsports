@@ -43,8 +43,8 @@ public class Top100SeedingService {
     private final PlayerImageEnrichmentService imageEnrichmentService;
 
     // Process in batches to handle rate limits and token limits
-    private static final int BATCH_SIZE = 10;
-    private static final int BATCH_DELAY_SECONDS = 10; // Anthropic direct — generous rate limits, no proxy throttling
+    private static final int BATCH_SIZE = 5;
+    private static final int BATCH_DELAY_SECONDS = 30; // Free tier models need longer cooldown between batches
     
     /**
      * Seed Top 100 players for a specific sport.
@@ -69,8 +69,9 @@ public class Top100SeedingService {
                 .map(Player::getCurrentRank)
                 .collect(Collectors.toSet());
 
-        // Process in batches of 10 to avoid token limits and rate limits
-        for (int batch = 0; batch < 10; batch++) {
+        // Process in batches to avoid token limits and rate limits
+        int totalBatches = (100 + BATCH_SIZE - 1) / BATCH_SIZE;
+        for (int batch = 0; batch < totalBatches; batch++) {
             int startRank = batch * BATCH_SIZE + 1;
             int endRank = startRank + BATCH_SIZE - 1;
 
@@ -114,7 +115,7 @@ public class Top100SeedingService {
                 }
 
                 // Wait between batches to respect rate limits
-                if (batch < 9) {
+                if (batch < totalBatches - 1) {
                     log.info("⏳ Waiting {}s before next batch...", BATCH_DELAY_SECONDS);
                     TimeUnit.SECONDS.sleep(BATCH_DELAY_SECONDS);
                 }
