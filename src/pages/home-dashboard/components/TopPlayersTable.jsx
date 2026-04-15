@@ -4,6 +4,7 @@ import Image from '../../../components/AppImage';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
+import playerApiService from '../../../services/playerApiService';
 
 const TopPlayersTable = ({ selectedCategory = 'all' }) => {
   const [playersData, setPlayersData] = useState([]);
@@ -15,8 +16,19 @@ const TopPlayersTable = ({ selectedCategory = 'all' }) => {
   const [sortDirection, setSortDirection] = useState('desc');
 
   const itemsPerPage = 10; // Fixed at 10 items per page
+  const [error, setError] = useState(null);
 
-  // Mock comprehensive player data for different sports
+  // Map frontend categories to backend sport enums
+  const categoryToSport = {
+    'all': null,
+    'football': 'FOOTBALL',
+    'basketball': 'BASKETBALL',
+    'cricket': 'CRICKET',
+    'tennis': 'TENNIS',
+    'mma': 'MMA'
+  };
+
+  // Legacy mock data for fallback
   const mockPlayersData = {
     nba: [
       {
@@ -510,17 +522,86 @@ const TopPlayersTable = ({ selectedCategory = 'all' }) => {
   };
 
   useEffect(() => {
-    setLoading(true);
-    setTimeout(() => {
-      if (selectedCategory === 'all') {
-        const allPlayers = Object.values(mockPlayersData).flat();
-        setPlayersData(allPlayers);
-      } else {
-        setPlayersData(mockPlayersData[selectedCategory] || []);
+    const fetchPlayers = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        let players = [];
+
+        if (selectedCategory === 'all') {
+          // Fetch from all 5 core sports in parallel
+          const sports = ['FOOTBALL', 'BASKETBALL', 'CRICKET', 'TENNIS', 'MMA'];
+          const promises = sports.map(sport =>
+            playerApiService.getTop100BySport(sport)
+              .then(data => data.players || [])
+              .catch(err => {
+                console.warn(`Failed to fetch ${sport} players:`, err);
+                return [];
+              })
+          );
+          const allResults = await Promise.all(promises);
+          players = allResults.flat();
+        } else {
+          const sport = categoryToSport[selectedCategory];
+          if (sport) {
+            const data = await playerApiService.getTop100BySport(sport);
+            players = data.players || [];
+          }
+        }
+
+        // Transform players for UI display
+        const transformedPlayers = players.map(p => ({
+          id: p.id,
+          name: p.displayName || p.name,
+          position: p.position || 'Unknown',
+          team: p.team || 'Retired',
+          avatar: p.photoUrl || 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop&crop=face',
+          teamLogo: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=50&h=50&fit=crop',
+          stats: {
+            ppg: p.ppg || 0,
+            rpg: p.rpg || 0,
+            apg: p.apg || 0,
+            fg: p.fg || 'N/A'
+          },
+          attributes: {
+            overall: p.aiRating || p.ranking_score || 80,
+            offense: p.aiRating ? Math.min(99, p.aiRating + 2) : 80,
+            defense: p.aiRating ? Math.max(60, p.aiRating - 5) : 75,
+            athleticism: p.aiRating ? Math.min(99, p.aiRating - 2) : 78
+          },
+          recentNews: p.biography?.substring(0, 50) || 'Elite player',
+          upcomingMatch: {
+            opponent: 'TBD',
+            date: new Date().toISOString(),
+            time: '20:00',
+            venue: 'TBD'
+          },
+          lastMatch: {
+            opponent: 'Previous Match',
+            score: 'N/A',
+            performance: 'N/A',
+            date: new Date().toISOString()
+          },
+          contract: 'Professional',
+          age: p.age || 'N/A',
+          experience: p.team ? 'Professional' : 'Retired',
+          trending: p.previousRank
+            ? (p.previousRank > p.currentRank ? `+${p.previousRank - p.currentRank}` : `${p.previousRank - p.currentRank}`)
+            : '+0%'
+        }));
+
+        setPlayersData(transformedPlayers);
+        setCurrentPage(1);
+      } catch (err) {
+        console.error('Error fetching players:', err);
+        setError('Failed to load players. Please try again.');
+        setPlayersData([]);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-      setCurrentPage(1);
-    }, 500);
+    };
+
+    fetchPlayers();
   }, [selectedCategory]);
 
   // Search and filter logic
@@ -637,6 +718,31 @@ const TopPlayersTable = ({ selectedCategory = 'all' }) => {
         {[...Array(3)].map((_, i) => (
           <div key={i} className="h-24 bg-gray-200 rounded-lg animate-pulse"></div>
         ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-text-primary">Top Players</h2>
+            <p className="text-text-secondary mt-1">Performance stats and career highlights</p>
+          </div>
+        </div>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+          <Icon name="AlertCircle" size={48} className="mx-auto text-red-400 mb-4" />
+          <h3 className="text-lg font-medium text-red-900 mb-2">Failed to Load Players</h3>
+          <p className="text-red-700 mb-4">{error}</p>
+          <Button
+            onClick={() => window.location.reload()}
+            variant="outline"
+            className="border-red-300 text-red-700 hover:bg-red-100"
+          >
+            Try Again
+          </Button>
+        </div>
       </div>
     );
   }

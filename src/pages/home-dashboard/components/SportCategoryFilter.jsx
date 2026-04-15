@@ -5,16 +5,13 @@ import Button from '../../../components/ui/Button';
 const SportCategoryFilter = ({ onCategoryChange, activeCategory = 'all' }) => {
   const [selectedCategory, setSelectedCategory] = useState(activeCategory);
 
+  // 5 core sports aligned with player-service backend
   const categories = [
     { id: 'all', name: 'All Sports', icon: 'Trophy', color: 'bg-primary' },
-    { id: 'nfl', name: 'NFL', icon: 'Shield', color: 'bg-green-600' },
-    { id: 'nba', name: 'NBA', icon: 'Circle', color: 'bg-orange-600' },
-    { id: 'mlb', name: 'MLB', icon: 'Target', color: 'bg-blue-600' },
-    { id: 'nhl', name: 'NHL', icon: 'Disc', color: 'bg-red-600' },
-    { id: 'soccer', name: 'Soccer', icon: 'CircleDot', color: 'bg-emerald-600' },
+    { id: 'football', name: 'Football', icon: 'CircleDot', color: 'bg-emerald-600' },
+    { id: 'basketball', name: 'Basketball', icon: 'Circle', color: 'bg-orange-600' },
+    { id: 'cricket', name: 'Cricket', icon: 'Target', color: 'bg-blue-600' },
     { id: 'tennis', name: 'Tennis', icon: 'Zap', color: 'bg-yellow-600' },
-    { id: 'golf', name: 'Golf', icon: 'Target', color: 'bg-teal-600' },
-    { id: 'boxing', name: 'Boxing', icon: 'Zap', color: 'bg-purple-600' },
     { id: 'mma', name: 'MMA', icon: 'Shield', color: 'bg-indigo-600' }
   ];
 
