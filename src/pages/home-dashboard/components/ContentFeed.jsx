@@ -9,14 +9,11 @@ import highlightsService from '../../../services/highlightsService';
 
 const SPORT_MAP = {
   all: null,
-  basketball: 'BASKETBALL',
   football: 'FOOTBALL',
-  soccer: 'SOCCER',
-  hockey: 'HOCKEY',
+  basketball: 'BASKETBALL',
+  cricket: 'CRICKET',
   tennis: 'TENNIS',
-  mma: 'MMA',
-  baseball: 'BASEBALL',
-  golf: 'GOLF',
+  mma: 'MMA'
 };
 
 const toNewsCard = (article) => ({

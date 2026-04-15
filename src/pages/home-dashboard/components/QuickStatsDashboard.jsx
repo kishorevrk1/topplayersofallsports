@@ -6,7 +6,7 @@ const QuickStatsDashboard = ({ selectedCategory = 'all' }) => {
   const [statsData, setStatsData] = useState({});
   const [loading, setLoading] = useState(true);
 
-  // Mock comprehensive quick stats data
+  // Mock comprehensive quick stats data - 5 core sports only
   const mockStatsData = {
     all: {
       activeGames: { value: 12, trend: '+3', color: 'text-blue-600', bgColor: 'bg-blue-50' },
@@ -16,7 +16,7 @@ const QuickStatsDashboard = ({ selectedCategory = 'all' }) => {
       liveEvents: { value: 8, trend: '+2', color: 'text-orange-600', bgColor: 'bg-orange-50' },
       tradingAlerts: { value: 5, trend: '+2', color: 'text-yellow-600', bgColor: 'bg-yellow-50' }
     },
-    nba: {
+    basketball: {
       activeGames: { value: 4, trend: '+1', color: 'text-orange-600', bgColor: 'bg-orange-50' },
       breakingNews: { value: 1, trend: '0', color: 'text-red-600', bgColor: 'bg-red-50' },
       newHighlights: { value: 12, trend: '+8', color: 'text-green-600', bgColor: 'bg-green-50' },
@@ -24,20 +24,36 @@ const QuickStatsDashboard = ({ selectedCategory = 'all' }) => {
       liveEvents: { value: 2, trend: '+1', color: 'text-blue-600', bgColor: 'bg-blue-50' },
       tradingAlerts: { value: 3, trend: '+1', color: 'text-yellow-600', bgColor: 'bg-yellow-50' }
     },
-    nfl: {
-      activeGames: { value: 2, trend: '+1', color: 'text-green-600', bgColor: 'bg-green-50' },
+    football: {
+      activeGames: { value: 6, trend: '+2', color: 'text-emerald-600', bgColor: 'bg-emerald-50' },
       breakingNews: { value: 1, trend: '+1', color: 'text-red-600', bgColor: 'bg-red-50' },
       newHighlights: { value: 8, trend: '+4', color: 'text-green-600', bgColor: 'bg-green-50' },
-      playerUpdates: { value: 4, trend: '+2', color: 'text-purple-600', bgColor: 'bg-purple-50' },
-      liveEvents: { value: 1, trend: '0', color: 'text-blue-600', bgColor: 'bg-blue-50' },
-      tradingAlerts: { value: 1, trend: '+1', color: 'text-yellow-600', bgColor: 'bg-yellow-50' }
-    },
-    soccer: {
-      activeGames: { value: 6, trend: '+2', color: 'text-emerald-600', bgColor: 'bg-emerald-50' },
-      breakingNews: { value: 1, trend: '0', color: 'text-red-600', bgColor: 'bg-red-50' },
-      newHighlights: { value: 8, trend: '+3', color: 'text-green-600', bgColor: 'bg-green-50' },
       playerUpdates: { value: 5, trend: '+2', color: 'text-purple-600', bgColor: 'bg-purple-50' },
       liveEvents: { value: 5, trend: '+1', color: 'text-blue-600', bgColor: 'bg-blue-50' },
+      tradingAlerts: { value: 2, trend: '+1', color: 'text-yellow-600', bgColor: 'bg-yellow-50' }
+    },
+    cricket: {
+      activeGames: { value: 3, trend: '+1', color: 'text-blue-600', bgColor: 'bg-blue-50' },
+      breakingNews: { value: 2, trend: '+1', color: 'text-red-600', bgColor: 'bg-red-50' },
+      newHighlights: { value: 10, trend: '+5', color: 'text-green-600', bgColor: 'bg-green-50' },
+      playerUpdates: { value: 4, trend: '+2', color: 'text-purple-600', bgColor: 'bg-purple-50' },
+      liveEvents: { value: 3, trend: '0', color: 'text-orange-600', bgColor: 'bg-orange-50' },
+      tradingAlerts: { value: 2, trend: '+1', color: 'text-yellow-600', bgColor: 'bg-yellow-50' }
+    },
+    tennis: {
+      activeGames: { value: 2, trend: '+1', color: 'text-yellow-600', bgColor: 'bg-yellow-50' },
+      breakingNews: { value: 1, trend: '0', color: 'text-red-600', bgColor: 'bg-red-50' },
+      newHighlights: { value: 6, trend: '+3', color: 'text-green-600', bgColor: 'bg-green-50' },
+      playerUpdates: { value: 3, trend: '+1', color: 'text-purple-600', bgColor: 'bg-purple-50' },
+      liveEvents: { value: 2, trend: '0', color: 'text-blue-600', bgColor: 'bg-blue-50' },
+      tradingAlerts: { value: 1, trend: '0', color: 'text-orange-600', bgColor: 'bg-orange-50' }
+    },
+    mma: {
+      activeGames: { value: 1, trend: '0', color: 'text-indigo-600', bgColor: 'bg-indigo-50' },
+      breakingNews: { value: 2, trend: '+1', color: 'text-red-600', bgColor: 'bg-red-50' },
+      newHighlights: { value: 5, trend: '+2', color: 'text-green-600', bgColor: 'bg-green-50' },
+      playerUpdates: { value: 3, trend: '+2', color: 'text-purple-600', bgColor: 'bg-purple-50' },
+      liveEvents: { value: 1, trend: '+1', color: 'text-orange-600', bgColor: 'bg-orange-50' },
       tradingAlerts: { value: 1, trend: '0', color: 'text-yellow-600', bgColor: 'bg-yellow-50' }
     }
   };
