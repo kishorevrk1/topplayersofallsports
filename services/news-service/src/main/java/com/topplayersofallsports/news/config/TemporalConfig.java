@@ -11,6 +11,7 @@ import io.temporal.worker.Worker;
 import io.temporal.worker.WorkerFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -23,6 +24,7 @@ import jakarta.annotation.PreDestroy;
  */
 @Slf4j
 @Configuration
+@ConditionalOnProperty(name = "temporal.enabled", havingValue = "true")
 public class TemporalConfig {
     
     @Value("${temporal.host}")

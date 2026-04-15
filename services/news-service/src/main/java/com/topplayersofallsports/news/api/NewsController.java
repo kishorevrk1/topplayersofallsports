@@ -223,9 +223,8 @@ public class NewsController {
                 savedCount = newsService.fetchAndStoreNews(sport);
             } else {
                 List<Sport> allSports = List.of(
-                    Sport.BASKETBALL, Sport.FOOTBALL, Sport.SOCCER, 
-                    Sport.HOCKEY, Sport.TENNIS, Sport.MMA, 
-                    Sport.BASEBALL, Sport.GOLF
+                    Sport.FOOTBALL, Sport.BASKETBALL, Sport.CRICKET,
+                    Sport.TENNIS, Sport.MMA
                 );
                 savedCount = newsService.fetchAndStoreAllNews(allSports);
             }

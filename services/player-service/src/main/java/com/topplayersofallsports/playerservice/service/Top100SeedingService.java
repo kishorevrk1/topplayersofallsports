@@ -549,13 +549,6 @@ public class Top100SeedingService {
             case MMA -> "MMA/UFC";
             case CRICKET -> "Cricket";
             case TENNIS -> "Tennis";
-            case BASEBALL -> "Baseball (MLB)";
-            case HOCKEY -> "Hockey (NHL)";
-            case GOLF -> "Golf";
-            case F1 -> "Formula 1 Racing";
-            case BOXING -> "Boxing";
-            case SWIMMING -> "Swimming";
-            case ATHLETICS -> "Athletics/Track & Field";
         };
     }
     

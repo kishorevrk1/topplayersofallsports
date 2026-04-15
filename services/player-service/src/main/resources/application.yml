@@ -8,7 +8,7 @@ spring:
     name: player-service
   
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5433/topplayersofallsports}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/topplayersofallsports}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
@@ -156,7 +156,7 @@ springdoc:
 
 # Temporal Workflow Configuration
 temporal:
-  enabled: true             # Enable Temporal workflows
+  enabled: false            # Disabled for local development (requires Docker)
   connection:
     target: localhost:7233  # Temporal server address
   namespace: default        # Temporal namespace

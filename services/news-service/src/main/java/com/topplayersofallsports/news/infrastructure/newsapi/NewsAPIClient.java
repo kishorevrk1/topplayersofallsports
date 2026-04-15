@@ -48,14 +48,11 @@ public class NewsAPIClient {
      * Using more specific terms to avoid spam/irrelevant articles
      */
     private static final Map<Sport, String> SPORT_QUERIES = Map.of(
+        Sport.FOOTBALL, "(Premier League OR Champions League OR FIFA OR UEFA OR football) AND (match OR goal OR player)",
         Sport.BASKETBALL, "(NBA OR \"National Basketball Association\") AND (game OR player OR team OR score)",
-        Sport.FOOTBALL, "(NFL OR \"National Football League\") AND (game OR player OR team OR touchdown)",
-        Sport.SOCCER, "(\"Premier League\" OR \"Champions League\" OR FIFA OR UEFA) AND (match OR goal OR player)",
-        Sport.HOCKEY, "(NHL OR \"National Hockey League\") AND (game OR player OR team OR goal)",
+        Sport.CRICKET, "(IPL OR ICC OR cricket) AND (match OR innings OR player)",
         Sport.TENNIS, "(ATP OR WTA OR \"Grand Slam\" OR Wimbledon OR \"US Open\") AND (match OR tournament OR player)",
-        Sport.MMA, "(UFC OR \"Ultimate Fighting Championship\" OR Bellator) AND (fight OR fighter OR knockout)",
-        Sport.BASEBALL, "(MLB OR \"Major League Baseball\") AND (game OR player OR team OR home run)",
-        Sport.GOLF, "(PGA OR \"PGA Tour\" OR \"Masters Tournament\") AND (tournament OR player OR round)"
+        Sport.MMA, "(UFC OR \"Ultimate Fighting Championship\" OR Bellator) AND (fight OR fighter OR knockout)"
     );
     
     /**

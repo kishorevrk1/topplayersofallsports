@@ -213,12 +213,12 @@ public class NewsService {
             .totalArticles(totalArticles)
             .basketballCount(newsRepository.countBySportAndIsActiveTrue(Sport.BASKETBALL))
             .footballCount(newsRepository.countBySportAndIsActiveTrue(Sport.FOOTBALL))
-            .soccerCount(newsRepository.countBySportAndIsActiveTrue(Sport.SOCCER))
-            .hockeyCount(newsRepository.countBySportAndIsActiveTrue(Sport.HOCKEY))
+            .soccerCount(0)
+            .hockeyCount(0)
             .tennisCount(newsRepository.countBySportAndIsActiveTrue(Sport.TENNIS))
             .mmaCount(newsRepository.countBySportAndIsActiveTrue(Sport.MMA))
-            .baseballCount(newsRepository.countBySportAndIsActiveTrue(Sport.BASEBALL))
-            .golfCount(newsRepository.countBySportAndIsActiveTrue(Sport.GOLF))
+            .baseballCount(0)
+            .golfCount(0)
             .build();
     }
     

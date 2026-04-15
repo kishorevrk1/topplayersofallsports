@@ -5,16 +5,19 @@ import com.topplayersofallsports.highlights.temporal.HighlightIngestWorkflowImpl
 import io.temporal.worker.Worker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 
 import jakarta.annotation.PostConstruct;
 
 /**
  * Configuration for registering Temporal workflows and activities with workers.
- * 
+ *
  * Ensures workflows and activities are properly registered before workers start.
+ * This configuration is skipped if temporal.enabled=false
  */
 @Configuration
+@ConditionalOnProperty(name = "temporal.enabled", havingValue = "true")
 @RequiredArgsConstructor
 @Slf4j
 public class TemporalWorkerConfig {

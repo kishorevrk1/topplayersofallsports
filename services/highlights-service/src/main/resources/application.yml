@@ -4,7 +4,17 @@ spring:
   
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:local}
-  
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/topplayersofallsports}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+
   # CORS Configuration - Allow frontend to access API
   web:
     cors:
@@ -36,7 +46,6 @@ spring:
   
   flyway:
     enabled: true
-    baseline-on-migrate: true
     locations: classpath:db/migration
   
   cache:
@@ -80,36 +89,53 @@ highlights:
     trending-ttl-seconds: 300
     highlights-ttl-seconds: 600
 
-# YouTube Channel ID Mappings
+# YouTube Channel ID Mappings - Core 5 Sports Only
 # Add new channels here to enable channel logos
 channels:
   # Basketball
   NBA: "UCWJ2lWNubArHWmf3FIHbfcQ"
   "ESPN NBA": "UCiWLfSweyRNmLpgEHekhoAg"
   "House of Highlights": "UCqQo7ewe87aYAe7ub5UqXMw"
-  
-  # American Football
-  NFL: "UCDVYQ4Zhbm3S2dlz7P1GBDg"
-  "ESPN NFL": "UCiWLfSweyRNmLpgEHekhoAg"
-  
-  # Soccer/Football
+
+  # Football/Soccer
   "Premier League": "UC_8vRXCrUZYe2UqVnY3xRbg"
   LaLiga: "UC6jEJ8xgbOaZw-oi9-b6A2A"
   Bundesliga: "UCjS6KriCfWJL8l3T-v9n8Aw"
   "Serie A": "UCDXXwGkL6_6Wh2Tz_KLvqpw"
   "Ligue 1": "UCQ-VepOJLOlcHRa6W3qGIQQ"
   "UEFA Champions League": "UCG9vn8Hbwk3Lvv9bT6R9Cuw"
-  
+
   # MMA
   UFC: "UCvgfXK4nTYKudb0rFR6noLA"
   "Bellator MMA": "UCqO-XI2U_1ADxfp-jzrEfpg"
   "ONE Championship": "UCiormkBf3jm6mfb7k0yPbKA"
-  
+
   # Tennis
   "ATP Tour": "UCbcxFkd6B9xUU54InHv4Tig"
   WTA: "UCJJdCLCqVTNlzI0qLQvLYHQ"
-  
-  # General Sports
-  ESPN: "UCiWLfSweyRNmLpgEHekhoAg"
-  "Bleacher Report": "UCxHPbvvbQJeINpfWnLcOlFQ"
-  "Sky Sports": "UCNAf1k0yIjyGu5YhYqSFqKQ"
+
+  # Cricket
+  ICC: "UCbmNph00IEVeqc8Edra1bqA"
+  IPL: "UCSqRnRDZwbaW98aD-tKiVBA"
+  "England Cricket": "UCNXq1NYQLF_hIZXKqhvOeSA"
+
+# Temporal Configuration - Disabled for local development (requires Docker)
+temporal:
+  enabled: false
+  connection:
+    target: localhost:7233
+  namespace: default
+  worker:
+    task-queue: highlights-ingest
+
+# Server configuration
+server:
+  port: 8083
+  servlet:
+    context-path: /
+
+# Logging
+logging:
+  level:
+    root: INFO
+    com.topplayersofallsports: DEBUG

@@ -15,11 +15,12 @@ import java.util.List;
 
 /**
  * Scheduler service for triggering Temporal ingest workflows.
- * 
+ *
  * Periodically checks active sources and triggers ingest workflows based on priority.
  * Production-ready with proper workflow management and error handling.
+ * NOTE: Only used when Temporal is enabled. Not loaded as a Spring bean by default.
  */
-@Service
+// @Service - commented out to avoid loading when Temporal is disabled
 @RequiredArgsConstructor
 @Slf4j
 public class IngestSchedulerService {

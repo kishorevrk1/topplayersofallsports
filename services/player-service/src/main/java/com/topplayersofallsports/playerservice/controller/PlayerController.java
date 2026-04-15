@@ -270,13 +270,6 @@ public class PlayerController {
             case MMA -> "MMA/UFC";
             case CRICKET -> "Cricket";
             case TENNIS -> "Tennis";
-            case BASEBALL -> "Baseball";
-            case HOCKEY -> "Hockey";
-            case GOLF -> "Golf";
-            case F1 -> "Formula 1";
-            case BOXING -> "Boxing";
-            case SWIMMING -> "Swimming";
-            case ATHLETICS -> "Athletics";
         };
     }
 }

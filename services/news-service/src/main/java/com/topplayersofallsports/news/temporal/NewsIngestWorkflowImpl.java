@@ -38,16 +38,13 @@ public class NewsIngestWorkflowImpl implements NewsIngestWorkflow {
         Workflow.getLogger(NewsIngestWorkflowImpl.class)
             .info("Starting news ingestion workflow");
         
-        // List of sports to fetch news for
+        // List of sports to fetch news for (5 core sports)
         List<Sport> sports = List.of(
-            Sport.BASKETBALL,
             Sport.FOOTBALL,
-            Sport.SOCCER,
-            Sport.HOCKEY,
+            Sport.BASKETBALL,
+            Sport.CRICKET,
             Sport.TENNIS,
-            Sport.MMA,
-            Sport.BASEBALL,
-            Sport.GOLF
+            Sport.MMA
         );
         
         // Fetch news for each sport

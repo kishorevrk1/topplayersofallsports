@@ -1,17 +1,12 @@
 package com.topplayersofallsports.news.domain.model;
 
 /**
- * Supported sports categories
+ * Supported sports categories - core sports only
  */
 public enum Sport {
-    BASKETBALL,
-    FOOTBALL,    // American Football (NFL)
-    SOCCER,      // Football/Soccer
-    HOCKEY,
-    TENNIS,
-    MMA,
-    BASEBALL,
-    GOLF,
-    CRICKET,
-    RUGBY
+    FOOTBALL,       // Soccer/Association Football
+    BASKETBALL,     // NBA/WNBA
+    CRICKET,        // International/IPL
+    TENNIS,         // ATP/WTA
+    MMA             // UFC/Bellator
 }

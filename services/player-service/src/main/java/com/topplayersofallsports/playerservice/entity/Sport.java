@@ -1,7 +1,9 @@
 package com.topplayersofallsports.playerservice.entity;
 
 public enum Sport {
-    FOOTBALL, BASKETBALL, MMA, CRICKET, TENNIS,
-    // Additional sports
-    BASEBALL, HOCKEY, GOLF, F1, BOXING, SWIMMING, ATHLETICS
+    FOOTBALL,       // Soccer/Association Football
+    BASKETBALL,     // NBA/WNBA
+    CRICKET,        // International/IPL
+    TENNIS,         // ATP/WTA
+    MMA             // UFC/Bellator
 }

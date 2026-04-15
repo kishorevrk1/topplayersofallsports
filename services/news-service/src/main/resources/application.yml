@@ -8,7 +8,7 @@ spring:
     name: news-service
   
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5433/topplayersofallsports}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/topplayersofallsports}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
@@ -58,6 +58,7 @@ newsapi:
 
 # Temporal Configuration
 temporal:
+  enabled: false
   host: localhost
   port: 7233
   namespace: default
@@ -69,14 +70,11 @@ news:
     enabled: true
     cron: "0 0 */6 * * *"  # Every 6 hours
     sports:
-      - BASKETBALL
       - FOOTBALL
-      - SOCCER
-      - HOCKEY
+      - BASKETBALL
+      - CRICKET
       - TENNIS
       - MMA
-      - BASEBALL
-      - GOLF
 
 # Logging
 logging:
