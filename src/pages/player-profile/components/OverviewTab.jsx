@@ -1,176 +1,174 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Icon from '../../../components/AppIcon';
-import aiSportsService from '../../../services/aiSportsService';
 
 const OverviewTab = ({ player }) => {
-  const [aiInsights, setAiInsights] = useState(null);
-  const [loadingInsights, setLoadingInsights] = useState(false);
-
-  // Generate AI-powered player insights
-  useEffect(() => {
-    const generateInsights = async () => {
-      if (!player?.name) return;
-      
-      setLoadingInsights(true);
-      try {
-        const insights = await aiSportsService.generatePlayerProfile(
-          player.name, 
-          player.category || 'NBA'
-        );
-        setAiInsights(insights);
-      } catch (error) {
-        console.error('Error generating AI insights:', error);
-      } finally {
-        setLoadingInsights(false);
-      }
-    };
-
-    generateInsights();
-  }, [player]);
+  const rating = player.aiRating ?? player.rankingScore;
 
   return (
     <div className="space-y-6">
-      {/* AI-Generated Insights Section */}
-      <div className="bg-accent/5 border border-accent/20 rounded-lg p-6">
-        <div className="flex items-center space-x-2 mb-4">
-          <Icon name="Sparkles" size={20} className="text-accent" />
-          <h3 className="text-lg font-semibold text-text-primary">AI Player Analysis</h3>
-        </div>
-        
-        {loadingInsights ? (
-          <div className="flex items-center space-x-3 text-text-secondary">
-            <Icon name="Loader2" size={16} className="animate-spin" />
-            <span>Generating AI insights...</span>
+      {/* All-Time Rating */}
+      {rating != null && (
+        <div className="bg-card border border-border rounded-lg p-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <Icon name="Star" size={20} className="text-accent" />
+            <h3 className="text-lg font-semibold text-text-primary">All-Time Rating</h3>
+            <span className="bg-accent/10 text-accent text-xs font-medium px-2 py-1 rounded-full">
+              AI-powered
+            </span>
           </div>
-        ) : aiInsights ? (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {aiInsights.stats?.map((stat, index) => (
-                <div key={index} className="text-center">
-                  <div className="text-2xl font-bold text-accent">{stat.value}</div>
-                  <div className="text-sm text-text-secondary">{stat.label}</div>
-                </div>
-              ))}
-            </div>
-            {aiInsights.recentUpdate && (
-              <div className="bg-white rounded-lg p-4 border">
-                <h4 className="font-semibold text-text-primary mb-2">
-                  {aiInsights.recentUpdate.title}
-                </h4>
-                <p className="text-text-secondary text-sm">
-                  {aiInsights.recentUpdate.description}
-                </p>
-                <span className="text-xs text-text-secondary mt-2 block">
-                  {aiInsights.recentUpdate.timeAgo}
-                </span>
-              </div>
-            )}
-          </div>
-        ) : (
-          <p className="text-text-secondary">AI insights will appear here.</p>
-        )}
-      </div>
 
-      {/* AI-Generated Bio */}
-      <div className="bg-card border border-border rounded-lg p-6">
-        <div className="flex items-center space-x-2 mb-4">
-          <Icon name="User" size={20} className="text-accent" />
-          <h3 className="text-lg font-semibold">Player Biography</h3>
-          <span className="bg-accent/10 text-accent text-xs font-medium px-2 py-1 rounded-full">
-            AI Generated
-          </span>
+          <div className="flex items-center gap-6">
+            <div className="text-5xl font-bold text-accent">{Math.round(rating)}</div>
+            <div className="flex-1">
+              <div className="h-2.5 rounded-full bg-muted overflow-hidden mb-2">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-accent to-accent/70 transition-all duration-700"
+                  style={{ width: `${Math.min(rating, 100)}%` }}
+                />
+              </div>
+              <p className="text-sm text-text-secondary leading-relaxed">
+                Scored on peak performance, longevity, awards, and era-adjusted impact.
+              </p>
+            </div>
+          </div>
         </div>
-        <p className="text-text-secondary leading-relaxed">
-          {player.biography}
-        </p>
-      </div>
+      )}
+
+      {/* Strengths */}
+      {player.strengths?.length > 0 && (
+        <div className="bg-card border border-border rounded-lg p-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <Icon name="Zap" size={20} className="text-accent" />
+            <h3 className="text-lg font-semibold">Key Strengths</h3>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {player.strengths.map((strength, index) => (
+              <span
+                key={index}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/10 text-accent text-sm font-medium border border-accent/20"
+              >
+                <Icon name="CheckCircle" size={14} />
+                {strength}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Biography */}
+      {player.biography && (
+        <div className="bg-card border border-border rounded-lg p-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <Icon name="User" size={20} className="text-accent" />
+            <h3 className="text-lg font-semibold">Biography</h3>
+          </div>
+          <p className="text-text-secondary leading-relaxed">
+            {player.biography}
+          </p>
+        </div>
+      )}
 
       {/* Career Highlights */}
-      <div className="bg-card border border-border rounded-lg p-6">
-        <div className="flex items-center space-x-2 mb-6">
-          <Icon name="Trophy" size={20} className="text-accent" />
-          <h3 className="text-lg font-semibold">Career Highlights</h3>
-        </div>
-        
-        <div className="space-y-4">
-          {player.careerHighlights.map((highlight, index) => (
-            <div key={index} className="flex items-start space-x-4 p-4 bg-muted rounded-lg">
-              <div className="flex-shrink-0 w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center">
-                <Icon name={highlight.icon} size={20} className="text-accent" />
-              </div>
-              <div className="flex-1">
-                <h4 className="font-medium text-text-primary mb-1">{highlight.title}</h4>
-                <p className="text-sm text-text-secondary mb-2">{highlight.description}</p>
-                <div className="flex items-center space-x-4 text-xs text-text-secondary">
-                  <span className="flex items-center space-x-1">
-                    <Icon name="Calendar" size={12} />
-                    <span>{highlight.date}</span>
-                  </span>
-                  {highlight.location && (
-                    <span className="flex items-center space-x-1">
-                      <Icon name="MapPin" size={12} />
-                      <span>{highlight.location}</span>
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      {player.careerHighlights?.length > 0 && (
+        <div className="bg-card border border-border rounded-lg p-6">
+          <div className="flex items-center space-x-2 mb-6">
+            <Icon name="Trophy" size={20} className="text-accent" />
+            <h3 className="text-lg font-semibold">Career Highlights</h3>
+          </div>
 
-      {/* Personal Information */}
+          <div className="space-y-3">
+            {player.careerHighlights.map((highlight, index) => {
+              const isString = typeof highlight === 'string';
+              const title       = isString ? highlight : (highlight.title || highlight);
+              const description = isString ? '' : (highlight.description || '');
+              const date        = isString ? '' : (highlight.date || '');
+              const location    = isString ? '' : (highlight.location || '');
+              const icon        = isString ? 'Trophy' : (highlight.icon || 'Trophy');
+
+              return (
+                <div key={`${title}-${index}`} className="flex items-start space-x-4 p-4 bg-muted rounded-lg">
+                  <div className="flex-shrink-0 w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
+                    <Icon name={icon} size={18} className="text-accent" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-text-primary text-sm">{title}</h4>
+                    {description && (
+                      <p className="text-sm text-text-secondary mt-1">{description}</p>
+                    )}
+                    {(date || location) && (
+                      <div className="flex items-center space-x-4 text-xs text-text-secondary mt-1">
+                        {date && (
+                          <span className="flex items-center space-x-1">
+                            <Icon name="Calendar" size={11} />
+                            <span>{date}</span>
+                          </span>
+                        )}
+                        {location && (
+                          <span className="flex items-center space-x-1">
+                            <Icon name="MapPin" size={11} />
+                            <span>{location}</span>
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Personal Information + Achievements */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-card border border-border rounded-lg p-6">
           <div className="flex items-center space-x-2 mb-4">
             <Icon name="Info" size={20} className="text-accent" />
             <h3 className="text-lg font-semibold">Personal Information</h3>
           </div>
-          
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-text-secondary">Full Name</span>
-              <span className="font-medium">{player.fullName}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-text-secondary">Date of Birth</span>
-              <span className="font-medium">{player.dateOfBirth}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-text-secondary">Birthplace</span>
-              <span className="font-medium">{player.birthplace}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-text-secondary">Nationality</span>
-              <span className="font-medium">{player.nationality}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-text-secondary">College</span>
-              <span className="font-medium">{player.college}</span>
-            </div>
-          </div>
-        </div>
 
-        <div className="bg-card border border-border rounded-lg p-6">
-          <div className="flex items-center space-x-2 mb-4">
-            <Icon name="Award" size={20} className="text-accent" />
-            <h3 className="text-lg font-semibold">Achievements</h3>
-          </div>
-          
           <div className="space-y-3">
-            {player.achievements.map((achievement, index) => (
-              <div key={index} className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-accent/10 rounded-full flex items-center justify-center">
-                  <Icon name="Medal" size={14} className="text-accent" />
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium text-sm">{achievement.title}</div>
-                  <div className="text-xs text-text-secondary">{achievement.year}</div>
-                </div>
+            {[
+              { label: 'Full Name',    value: player.fullName },
+              { label: 'Date of Birth', value: player.dateOfBirth },
+              { label: 'Birthplace',   value: player.birthplace },
+              { label: 'Nationality',  value: player.nationality },
+              { label: 'College',      value: player.college },
+            ].filter(({ value }) => value && value !== '—' && value !== 'N/A').map(({ label, value }) => (
+              <div key={label} className="flex justify-between">
+                <span className="text-text-secondary">{label}</span>
+                <span className="font-medium">{value}</span>
               </div>
             ))}
           </div>
         </div>
+
+        {player.achievements?.length > 0 && (
+          <div className="bg-card border border-border rounded-lg p-6">
+            <div className="flex items-center space-x-2 mb-4">
+              <Icon name="Award" size={20} className="text-accent" />
+              <h3 className="text-lg font-semibold">Achievements</h3>
+            </div>
+
+            <div className="space-y-3">
+              {player.achievements.map((achievement, index) => {
+                const title = typeof achievement === 'string' ? achievement : (achievement.title || achievement);
+                const year  = typeof achievement === 'string' ? '' : (achievement.year || '');
+                return (
+                  <div key={`${title}-${index}`} className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-accent/10 rounded-full flex items-center justify-center shrink-0">
+                      <Icon name="Medal" size={14} className="text-accent" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-sm text-text-primary">{title}</div>
+                      {year && <div className="text-xs text-text-secondary">{year}</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

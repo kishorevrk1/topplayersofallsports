@@ -42,9 +42,11 @@ const NewsCard = ({ article, isBreaking = false }) => {
   };
 
   return (
-    <article className={`bg-card border rounded-lg overflow-hidden transition-all duration-200 hover:shadow-lg ${
+    <article className={`bg-card border rounded-lg overflow-hidden transition-all duration-200 hover:shadow-lg cursor-pointer ${
       isBreaking ? 'border-error border-2' : 'border-border'
-    }`}>
+    }`}
+    onClick={() => window.open(article.originalUrl, '_blank', 'noopener,noreferrer')}
+    >
       {/* Breaking News Badge */}
       {isBreaking && (
         <div className="bg-error text-error-foreground px-3 py-1 text-xs font-bold uppercase tracking-wide flex items-center">
@@ -74,7 +76,10 @@ const NewsCard = ({ article, isBreaking = false }) => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setIsBookmarked(!isBookmarked)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsBookmarked(!isBookmarked);
+              }}
               className="h-8 w-8"
             >
               <Icon 
@@ -87,38 +92,53 @@ const NewsCard = ({ article, isBreaking = false }) => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setShareMenuOpen(!shareMenuOpen)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShareMenuOpen(!shareMenuOpen);
+                }}
                 className="h-8 w-8"
               >
                 <Icon name="Share" size={16} />
               </Button>
               
               {shareMenuOpen && (
-                <div className="absolute right-0 top-full mt-1 bg-popover border border-border rounded-lg shadow-lg z-10 min-w-[160px]">
+                <div className="absolute right-0 top-full mt-1 bg-popover border border-border rounded-lg shadow-lg z-10 min-w-[160px]" onClick={(e) => e.stopPropagation()}>
                   <div className="py-1">
                     <button
-                      onClick={() => handleShare('twitter')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleShare('twitter');
+                      }}
                       className="w-full flex items-center px-3 py-2 text-sm hover:bg-muted transition-colors"
                     >
                       <Icon name="Twitter" size={14} className="mr-2" />
                       Twitter
                     </button>
                     <button
-                      onClick={() => handleShare('facebook')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleShare('facebook');
+                      }}
                       className="w-full flex items-center px-3 py-2 text-sm hover:bg-muted transition-colors"
                     >
                       <Icon name="Facebook" size={14} className="mr-2" />
                       Facebook
                     </button>
                     <button
-                      onClick={() => handleShare('linkedin')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleShare('linkedin');
+                      }}
                       className="w-full flex items-center px-3 py-2 text-sm hover:bg-muted transition-colors"
                     >
                       <Icon name="Linkedin" size={14} className="mr-2" />
                       LinkedIn
                     </button>
                     <button
-                      onClick={() => handleShare('copy')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleShare('copy');
+                      }}
                       className="w-full flex items-center px-3 py-2 text-sm hover:bg-muted transition-colors"
                     >
                       <Icon name="Copy" size={14} className="mr-2" />
@@ -140,11 +160,11 @@ const NewsCard = ({ article, isBreaking = false }) => {
           </h2>
 
           {article.image && (
-            <div className="relative overflow-hidden rounded-lg">
+            <div className="relative overflow-hidden rounded-lg bg-muted">
               <Image
                 src={article.image}
                 alt={article.headline}
-                className="w-full h-48 object-cover transition-transform duration-200 hover:scale-105"
+                className="w-full h-64 object-contain transition-transform duration-200 hover:scale-105"
               />
             </div>
           )}
@@ -160,6 +180,7 @@ const NewsCard = ({ article, isBreaking = false }) => {
                 <Link
                   key={index}
                   to={`/search-results?q=${encodeURIComponent(tag)}`}
+                  onClick={(e) => e.stopPropagation()}
                   className="inline-flex items-center px-2 py-1 bg-muted text-text-secondary text-xs rounded-full hover:bg-accent hover:text-accent-foreground transition-colors"
                 >
                   {tag}
@@ -187,12 +208,18 @@ const NewsCard = ({ article, isBreaking = false }) => {
             </div>
           </div>
           
-          <Link to={article.originalUrl} target="_blank" rel="noopener noreferrer">
-            <Button variant="outline" size="sm" className="text-xs">
-              Read Full Article
-              <Icon name="ExternalLink" size={12} className="ml-1" />
-            </Button>
-          </Link>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="text-xs"
+            onClick={(e) => {
+              e.stopPropagation();
+              window.open(article.originalUrl, '_blank', 'noopener,noreferrer');
+            }}
+          >
+            Read Full Article
+            <Icon name="ExternalLink" size={12} className="ml-1" />
+          </Button>
         </div>
       </div>
     </article>

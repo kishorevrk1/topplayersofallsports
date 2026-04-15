@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import Image from '../../../components/AppImage';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
-
 const PlayerCard = ({ player }) => {
   const getPositionColor = (position) => {
     const colors = {
@@ -62,7 +61,6 @@ const PlayerCard = ({ player }) => {
               <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPositionColor(player.position)}`}>
                 {player.position}
               </span>
-              <span className="text-sm text-text-secondary">{player.team}</span>
             </div>
           </div>
 
@@ -97,16 +95,18 @@ const PlayerCard = ({ player }) => {
 
         {/* Performance Indicator */}
         <div className="flex items-center justify-between mb-4">
-          <span className="text-sm text-text-secondary">Performance</span>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-text-secondary">Performance</span>
+          </div>
           <div className="flex items-center space-x-2">
             <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
-              <div 
+              <div
                 className={`h-full rounded-full ${
                   player.performance >= 80 ? 'bg-success' :
-                  player.performance >= 60 ? 'bg-warning': 'bg-error'
+                  player.performance >= 60 ? 'bg-warning' : 'bg-error'
                 }`}
                 style={{ width: `${player.performance}%` }}
-              ></div>
+              />
             </div>
             <span className="text-sm font-medium text-text-primary">{player.performance}%</span>
           </div>

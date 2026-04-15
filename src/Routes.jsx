@@ -11,11 +11,13 @@ import PlayerProfile from "pages/player-profile";
 import PlayersDirectory from "pages/players-directory";
 import VideoHighlightsHub from "pages/video-highlights-hub";
 import SearchResults from "pages/search-results";
-import SportsCalendar from "pages/sports-calendar";
 import Profile from "pages/profile";
 import EditProfile from "pages/profile/edit";
 import Settings from "pages/settings";
+import PlayerComparisonPage from "pages/player-comparison";
+import RatingDayPage from "pages/rating-day";
 import NotFound from "pages/NotFound";
+import ProtectedRoute from "components/auth/ProtectedRoute";
 
 const Routes = () => {
   return (
@@ -34,10 +36,11 @@ const Routes = () => {
         <Route path="/player-profile" element={<PlayerProfile />} />
         <Route path="/video-highlights-hub" element={<VideoHighlightsHub />} />
         <Route path="/search-results" element={<SearchResults />} />
-        <Route path="/sports-calendar" element={<SportsCalendar />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/profile/edit" element={<EditProfile />} />
-        <Route path="/settings" element={<Settings />} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/rating-day" element={<RatingDayPage />} />
+        <Route path="/compare" element={<PlayerComparisonPage />} />
         <Route path="*" element={<NotFound />} />
       </RouterRoutes>
       </ErrorBoundary>

@@ -48,15 +48,10 @@ const PlayerHero = ({ player, onFollow, isFollowing }) => {
                 <div>
                   <h1 className="text-3xl lg:text-4xl font-bold mb-2">{player.name}</h1>
                   <div className="flex items-center justify-center lg:justify-start space-x-4 text-lg">
-                    <span className="flex items-center space-x-2">
-                      <Image
-                        src={player.team.logo}
-                        alt={player.team.name}
-                        className="w-6 h-6"
-                      />
-                      <span>{player.team.name}</span>
-                    </span>
-                    <span className="text-white/80">#{player.jerseyNumber}</span>
+                    <span className="text-white/80">{player.sport}</span>
+                    {player.position && player.position !== 'N/A' && (
+                      <span className="text-white/80">· {player.position}</span>
+                    )}
                   </div>
                 </div>
 
@@ -75,23 +70,37 @@ const PlayerHero = ({ player, onFollow, isFollowing }) => {
               </div>
 
               {/* Player Details */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div className="text-center lg:text-left">
-                  <div className="text-2xl font-bold">{player.position}</div>
-                  <div className="text-white/80 text-sm">Position</div>
-                </div>
-                <div className="text-center lg:text-left">
-                  <div className="text-2xl font-bold">{player.age}</div>
-                  <div className="text-white/80 text-sm">Age</div>
-                </div>
-                <div className="text-center lg:text-left">
-                  <div className="text-2xl font-bold">{player.height}</div>
-                  <div className="text-white/80 text-sm">Height</div>
-                </div>
-                <div className="text-center lg:text-left">
-                  <div className="text-2xl font-bold">{player.weight}</div>
-                  <div className="text-white/80 text-sm">Weight</div>
-                </div>
+              <div className="flex flex-wrap gap-6 mb-6">
+                {player.position && player.position !== 'N/A' && (
+                  <div className="text-center lg:text-left">
+                    <div className="text-2xl font-bold">{player.position}</div>
+                    <div className="text-white/80 text-sm">Position</div>
+                  </div>
+                )}
+                {player.age && (
+                  <div className="text-center lg:text-left">
+                    <div className="text-2xl font-bold">{player.age}</div>
+                    <div className="text-white/80 text-sm">Age</div>
+                  </div>
+                )}
+                {player.height && player.height !== 'N/A' && (
+                  <div className="text-center lg:text-left">
+                    <div className="text-2xl font-bold">{player.height}</div>
+                    <div className="text-white/80 text-sm">Height</div>
+                  </div>
+                )}
+                {player.weight && player.weight !== 'N/A' && (
+                  <div className="text-center lg:text-left">
+                    <div className="text-2xl font-bold">{player.weight}</div>
+                    <div className="text-white/80 text-sm">Weight</div>
+                  </div>
+                )}
+                {player.eloScore && (
+                  <div className="text-center lg:text-left">
+                    <div className="text-2xl font-bold">{Math.round(player.eloScore)}</div>
+                    <div className="text-white/80 text-sm">ELO Rating</div>
+                  </div>
+                )}
               </div>
 
               {/* Key Stats */}

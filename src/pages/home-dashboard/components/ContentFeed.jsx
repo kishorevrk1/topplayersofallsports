@@ -4,106 +4,132 @@ import VideoCard from './VideoCard';
 import PlayerCard from './PlayerCard';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
-import aiSportsService from '../../../services/aiSportsService';
+import newsService from '../../../services/newsService';
+import highlightsService from '../../../services/highlightsService';
+
+const SPORT_MAP = {
+  all: null,
+  basketball: 'BASKETBALL',
+  football: 'FOOTBALL',
+  soccer: 'SOCCER',
+  hockey: 'HOCKEY',
+  tennis: 'TENNIS',
+  mma: 'MMA',
+  baseball: 'BASEBALL',
+  golf: 'GOLF',
+};
+
+const toNewsCard = (article) => ({
+  id: article.id,
+  type: 'news',
+  title: article.headline || article.title,
+  summary: article.summary,
+  image: article.image || article.imageUrl || '/assets/images/no_image.png',
+  category: article.sport || 'Sports',
+  author: article.author || article.source || 'Sports Desk',
+  timestamp: article.publishedAt instanceof Date ? article.publishedAt : new Date(article.publishedAt),
+  views: article.views ?? '—',
+  comments: '0',
+  isBreaking: article.isBreaking || false,
+});
+
+const toVideoCard = (highlight) => ({
+  id: highlight.id,
+  type: 'video',
+  title: highlight.title,
+  description: highlight.description || '',
+  thumbnail: highlight.thumbnail || '/assets/images/no_image.png',
+  duration: highlight.duration || 0,
+  views: highlight.views || 0,
+  likes: highlight.likes || 0,
+  comments: 0,
+  uploadedAt: highlight.uploadedAt instanceof Date ? highlight.uploadedAt : new Date(highlight.uploadedAt),
+  category: highlight.league || highlight.sport || 'Sports',
+  isHighlight: true,
+  isLive: highlight.isLive || false,
+});
 
 const ContentFeed = ({ selectedCategory, refreshTrigger }) => {
   const [content, setContent] = useState([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(0);
   const [error, setError] = useState(null);
 
-  const loadContent = async () => {
+  const sport = SPORT_MAP[selectedCategory?.toLowerCase()] || null;
+
+  const loadContent = async (pageNum = 0) => {
     setLoading(true);
     setError(null);
-    
+
     try {
-      // Generate AI-powered content
-      const aiContent = await aiSportsService.generateMixedContent(selectedCategory, 6);
-      
-      if (page === 1) {
-        setContent(aiContent);
+      const [newsResult, highlightsResult] = await Promise.allSettled([
+        sport
+          ? newsService.getNewsBySport(sport, pageNum, 4)
+          : newsService.getAllNews(pageNum, 4),
+        highlightsService.getHighlights({ sport: sport?.toLowerCase(), page: pageNum, size: 2 }),
+      ]);
+
+      const newsItems = newsResult.status === 'fulfilled'
+        ? (newsResult.value?.content || newsResult.value || [])
+            .map(a => toNewsCard(newsService.transformArticle ? newsService.transformArticle(a) : a))
+        : [];
+
+      const videoItems = highlightsResult.status === 'fulfilled'
+        ? (highlightsResult.value?.content || [])
+            .map(h => toVideoCard(highlightsService.transformHighlight ? highlightsService.transformHighlight(h) : h))
+        : [];
+
+      // Interleave: 2 news, 1 video, 2 news, 1 video…
+      const mixed = [];
+      let ni = 0, vi = 0;
+      while (ni < newsItems.length || vi < videoItems.length) {
+        for (let i = 0; i < 2 && ni < newsItems.length; i++) mixed.push(newsItems[ni++]);
+        if (vi < videoItems.length) mixed.push(videoItems[vi++]);
+      }
+
+      if (pageNum === 0) {
+        setContent(mixed);
       } else {
-        // Generate additional content for pagination
-        const moreContent = await aiSportsService.generateMixedContent(selectedCategory, 3);
-        setContent(prev => [...prev, ...moreContent]);
+        setContent(prev => [...prev, ...mixed]);
       }
-      
-      setHasMore(page < 3); // Limit to 3 pages to manage API costs
-    } catch (error) {
-      console.error('Error loading AI content:', error);
+
+      const newsHasMore = newsResult.status === 'fulfilled' && !(newsResult.value?.last ?? true);
+      setHasMore(newsHasMore && pageNum < 2);
+    } catch (err) {
+      console.error('Error loading content:', err);
       setError('Failed to load content. Please try again.');
-      
-      // Fallback to mock data if AI service fails
-      const mockContent = [
-        {
-          id: Date.now() + 1,
-          type: 'news',
-          title: "Breaking: Major Sports Update",
-          summary: "Stay tuned for the latest sports developments. Our AI-powered system is currently updating with fresh content.",
-          image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&h=250&fit=crop",
-          category: selectedCategory === 'all' ? 'NBA' : selectedCategory,
-          author: "Sports AI",
-          timestamp: new Date(),
-          views: "Loading...",
-          comments: "0",
-          isBreaking: true
-        }
-      ];
-      
-      if (page === 1) {
-        setContent(mockContent);
-      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    setPage(1);
+    setPage(0);
     setContent([]);
-    loadContent();
+    loadContent(0);
   }, [selectedCategory, refreshTrigger]);
 
   const loadMore = () => {
-    setPage(prev => prev + 1);
+    const next = page + 1;
+    setPage(next);
+    loadContent(next);
   };
-
-  useEffect(() => {
-    if (page > 1) {
-      loadContent();
-    }
-  }, [page]);
 
   const renderContentItem = (item) => {
     switch (item.type) {
-      case 'news':
-        return <NewsCard key={`news-${item.id}`} article={item} />;
-      case 'video':
-        return <VideoCard key={`video-${item.id}`} video={item} />;
-      case 'player':
-        return <PlayerCard key={`player-${item.id}`} player={item} />;
-      default:
-        return null;
+      case 'news':   return <NewsCard key={`news-${item.id}`} article={item} />;
+      case 'video':  return <VideoCard key={`video-${item.id}`} video={item} />;
+      case 'player': return <PlayerCard key={`player-${item.id}`} player={item} />;
+      default:       return null;
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* AI Content Notice */}
-      <div className="bg-accent/5 border border-accent/20 rounded-lg p-4 mb-6">
-        <div className="flex items-center space-x-2 text-accent">
-          <Icon name="Sparkles" size={16} />
-          <span className="text-sm font-medium">AI-Powered Content</span>
-        </div>
-        <p className="text-xs text-text-secondary mt-1">
-          This content is generated using OpenAI to provide the latest sports insights and analysis.
-        </p>
-      </div>
-
       {/* Error State */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="flex items-center space-x-2 text-red-600">
             <Icon name="AlertCircle" size={16} />
             <span className="text-sm font-medium">Content Loading Error</span>
@@ -112,7 +138,7 @@ const ContentFeed = ({ selectedCategory, refreshTrigger }) => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => loadContent()}
+            onClick={() => loadContent(page)}
             className="mt-2 text-red-600 border-red-200 hover:bg-red-50"
           >
             <Icon name="RefreshCw" size={14} className="mr-1" />
@@ -131,7 +157,7 @@ const ContentFeed = ({ selectedCategory, refreshTrigger }) => {
         <div className="flex items-center justify-center py-8">
           <div className="flex items-center space-x-3 text-text-secondary">
             <Icon name="Loader2" size={20} className="animate-spin" />
-            <span>Generating AI-powered content...</span>
+            <span>Loading content...</span>
           </div>
         </div>
       )}
@@ -145,7 +171,7 @@ const ContentFeed = ({ selectedCategory, refreshTrigger }) => {
             className="flex items-center space-x-2"
           >
             <Icon name="Plus" size={16} />
-            <span>Generate More Content</span>
+            <span>Load More</span>
           </Button>
         </div>
       )}
@@ -155,11 +181,8 @@ const ContentFeed = ({ selectedCategory, refreshTrigger }) => {
         <div className="text-center py-8">
           <div className="flex items-center justify-center space-x-2 text-text-secondary">
             <Icon name="CheckCircle" size={20} />
-            <span>You've reached the end of the AI-generated feed</span>
+            <span>You're all caught up</span>
           </div>
-          <p className="text-sm text-text-secondary mt-2">
-            Refresh the page for more AI-powered content!
-          </p>
         </div>
       )}
 
@@ -168,14 +191,12 @@ const ContentFeed = ({ selectedCategory, refreshTrigger }) => {
         <div className="text-center py-12">
           <div className="flex flex-col items-center space-y-4">
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-              <Icon name="Sparkles" size={24} className="text-text-secondary" />
+              <Icon name="Newspaper" size={24} className="text-text-secondary" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-text-primary mb-2">
-                Generating AI Content
-              </h3>
+              <h3 className="text-lg font-semibold text-text-primary mb-2">No content yet</h3>
               <p className="text-text-secondary">
-                Our AI is preparing personalized sports content for you.
+                Check back soon for the latest sports news and highlights.
               </p>
             </div>
           </div>
