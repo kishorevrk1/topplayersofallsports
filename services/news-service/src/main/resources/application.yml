@@ -8,9 +8,9 @@ spring:
     name: news-service
   
   datasource:
-    url: jdbc:postgresql://localhost:5433/topplayersofallsports
-    username: postgres
-    password: postgres
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/topplayersofallsports}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -51,7 +51,7 @@ spring:
 
 # NewsAPI Configuration
 newsapi:
-  api-key: ab34ae67855f4986a707bd9dea463055
+  api-key: ${NEWSAPI_API_KEY}
   base-url: https://newsapi.org/v2
   articles-per-sport: 20
   update-interval-hours: 6

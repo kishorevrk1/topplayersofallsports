@@ -8,9 +8,9 @@ spring:
     name: player-service
   
   datasource:
-    url: jdbc:postgresql://localhost:5433/topplayersofallsports
-    username: postgres
-    password: postgres
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/topplayersofallsports}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -61,7 +61,7 @@ spring:
 #                      model: gemini-2.0-flash  |  secondary-model: gemini-1.5-flash
 #                      (1,000,000 TPM free — virtually unlimited)
 openrouter:
-  api-key: AIzaSyCpy-GW-uL1gEujI_4e2CH4SQg72P3TQUs
+  api-key: ${GEMINI_API_KEY}
   base-url: https://generativelanguage.googleapis.com/v1beta/openai
   model: gemini-2.0-flash    # Gemini 2.0 Flash — 1M TPM free, virtually unlimited
   secondary-model: gemini-1.5-flash
@@ -72,7 +72,7 @@ openrouter:
 
 # Anthropic Direct API (used by Top100SeedingService — no OpenRouter proxy)
 anthropic:
-  api-key: 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
+  api-key: ${ANTHROPIC_API_KEY}
   model: claude-3-5-haiku-20241022    # Fast, cheap, excellent JSON generation
   max-tokens: 4096
   timeout-seconds: 120
@@ -80,7 +80,7 @@ anthropic:
 # API-Sports Configuration - Football stats as AI prompt context
 apisports:
   football:
-    key: 85d68b544dc24999df5e7a90cb8933bd
+    key: ${APISPORTS_FOOTBALL_KEY}
     base-url: https://v3.football.api-sports.io
     timeout-seconds: 30
 
@@ -173,8 +173,8 @@ ranking:
 # ── Google OAuth2 ──────────────────────────────────────────
 google:
   oauth2:
-    client-id: ${GOOGLE_CLIENT_ID:882439388803-8qdpntj38midjvlmcprku4b82lp125j3.apps.googleusercontent.com}
-    client-secret: ${GOOGLE_CLIENT_SECRET:placeholder-secret}
+    client-id: ${GOOGLE_CLIENT_ID}
+    client-secret: ${GOOGLE_CLIENT_SECRET}
     token-url: https://oauth2.googleapis.com/token
     user-info-url: https://www.googleapis.com/oauth2/v1/userinfo
 
